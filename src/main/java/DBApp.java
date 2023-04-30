@@ -28,6 +28,7 @@ public class DBApp {
 			File metadata = new File("src/main/resources/metadata.csv");
 			metadata.createNewFile();
 			maxRowPerPage = Integer.parseInt(prop.getProperty("MaximumRowsCountinTablePage"));
+//			maxRowPerPage=5;
 		}
 		catch(Exception e) {
 		}
@@ -97,11 +98,26 @@ public class DBApp {
 		//4 Update number of rows,create new record,insert in page if not full
 		//5 check missing insertion
 		checkDataTypes(strTableName, htblColNameValue);
+		
 		int [] index = binarySearchMadeByUs(htblColNameValue.get(TypeAndPk.get(1)), TypeAndPk, strTableName);
 		if(index[0] != -1)
 			throw new DBAppException();
 		ObjectInputStream in;
 		try {
+			FileReader fr = new FileReader("src/main/resources/metadata.csv");
+			BufferedReader br = new BufferedReader(fr);
+			String st = br.readLine();
+	
+			while(st!=null) {
+//				System.out.println("here");
+				String [] split = st.split(",");
+				if(split[0].equals(strTableName)) {
+					if(htblColNameValue.get(split[1]) == null)
+						htblColNameValue.put(split[1], new Null());
+				}
+				st= br.readLine();
+				}
+			br.close();
 			in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
 			Table table = (Table) in.readObject();
 			Set <String> hs = htblColNameValue.keySet(); 
@@ -112,32 +128,50 @@ public class DBApp {
 				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName +  "1.ser"));
 				outputStream.writeObject(newPage);
 				outputStream.close();
+				
 			}
 			else {
 				Vector <Record> currentPage = deserializePage(table, index[1]);
 				currentPage.add(index[2],new Record(htblColNameValue));
+//				System.out.println(currentPage);
 				//test on the index
+				int i =1;
+				
+					
 				if(currentPage.size() > maxRowPerPage) {
 					Vector <Record> newPage;
-					if(table.getPages().contains(index[1]+1)) {
-						newPage = deserializePage(table, index[1]+1);
+					do {
+					
+					
+					
+					if(table.getPages().contains(index[1]+i)) {
+						newPage = deserializePage(table, index[1]+i);
+						
 					}else {
 					table.getPages().add(table.getPages().size()+1);
 					newPage = new Vector <Record>();}
 					newPage.add(0,currentPage.lastElement());
 					currentPage.remove(currentPage.size()-1);					
-					ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (index[1] +1) + ".ser"));
-					ObjectOutputStream outputStream2 = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + index[1]+  ".ser"));
+					ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (index[1] +i) + ".ser"));
+					ObjectOutputStream outputStream2 = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (index[1]+ i -1) +  ".ser"));
 					outputStream.writeObject(newPage);
 					outputStream2.writeObject(currentPage);
 					outputStream.close();
 					outputStream2.close();
 					serializeTable(table);
-					return;	
-				}
-				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (table.getPages().size()) +  ".ser"));
+//					table.setRows(table.getRows() +1);
+//					System.out.println(currentPage);
+//					System.out.println(newPage);
+					currentPage = newPage;
+					i++;
+//					System.out.println(currentPage.size());
+//					System.out.println(!table.getPages().contains(index[1]+i));
+					System.out.println(table.getPages().contains(index[1]+i));
+				}while( currentPage.size() > maxRowPerPage  );}
+				else {
+				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (table.getPages().lastElement()) +  ".ser"));
 				outputStream.writeObject(currentPage);
-				outputStream.close();
+				outputStream.close();}
 			}
 			table.setRows(table.getRows() +1);
 			in.close();
@@ -170,7 +204,8 @@ public class DBApp {
 
 			if(index[0] == -1) {
 					in.close();
-					throw new DBAppException("No record found");
+//					throw new DBAppException("No record found");
+					return;
 			}
 			
 			Vector <Record> currentPage = deserializePage(table, index[1]);
@@ -221,31 +256,63 @@ public class DBApp {
 		if (checkIfTableExists(strTableName) == false)
 			throw new DBAppException("No such table");
 		checkDataTypes(strTableName, htblColNameValue);
-		ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
-		Table table = (Table) in.readObject();
-		for(int i = 0; i<table.getPages().size();i++) {
-			Vector <Record> page = deserializePage(table, table.getPages().get(i));
-			for(int j = 0;j<page.size();j++) {
-				if(page.get(j).compareRecords(htblColNameValue) == true) {
-					page.remove(j);
-					j--;}
+		if(htblColNameValue.get(primaryKeyInfoAndCheck(strTableName, htblColNameValue, false).get(1)) == null) {
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
+			Table table = (Table) in.readObject();
+			for(int i = 0; i<table.getPages().size();i++) {
+				Vector <Record> page = deserializePage(table, table.getPages().get(i));
+				for(int j = 0;j<page.size();j++) {
+					if(page.get(j).compareRecords(htblColNameValue) == true) {
+						page.remove(j);
+						j--;}
+				}
+				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + table.getPages().get(i) +".ser"));
+				outputStream.writeObject(page);
+				outputStream.close();
+				in.close();
+				if(page.size() == 0){
+					File file = new File("src/main/resources/data/" + strTableName + table.getPages().get(i) +".ser");
+					System.out.println(file.delete());
+					table.getPages().remove(i);
+					i--;
+					serializeTable(table);
+				}
+				page = null;
+				System.gc();
 			}
-			ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + table.getPages().get(i) +".ser"));
-			outputStream.writeObject(page);
-			outputStream.close();
-			in.close();
-			if(page.size() == 0){
-				File file = new File("src/main/resources/data/" + strTableName + table.getPages().get(i) +".ser");
-				System.out.println(file.delete());
-				table.getPages().remove(i);
-				i--;
-				serializeTable(table);
-			}
-			page = null;
-			System.gc();
 		}
+		else {
+			ArrayList <String> pkInfo = primaryKeyInfoAndCheck(strTableName, htblColNameValue, false);
+			int [] index = binarySearchMadeByUs(htblColNameValue.get(pkInfo.get(1)), pkInfo, strTableName);
+		
+				ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
+				Table table = (Table) in.readObject();
+				Vector <Record> page = deserializePage(table,index[1]);
+				if(page.get(index[2]).compareRecords(htblColNameValue) == true) {
+//					System.out.println("as");
+					page.remove(index[2]);
+					}
+				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + index[1] +".ser"));
+				outputStream.writeObject(page);
+				outputStream.close();
+				in.close();
+				if(page.size() == 0){
+					File file = new File("src/main/resources/data/" + strTableName +index[1] +".ser");
+					System.out.println(file.delete());
+					for(int i = 0; i<table.getPages().size();i++) {
+						if(table.getPages().get(i)==index[1])
+							table.getPages().remove(i);}
+					serializeTable(table);
+				}
+				page = null;
+				System.gc();
+			
+//				System.out.println(index[2]);
+			
+			}
 		}
 		catch(Exception e) {
+			e.printStackTrace();
 			throw new DBAppException(e.getMessage());
 		}		
 	}
@@ -258,8 +325,10 @@ public class DBApp {
 			 br = new BufferedReader(fr);
 			String s = br.readLine();
 			while(s != null) {
-				if(s.split(",")[0].equals(tableName)) 
+				if(s.split(",")[0].equals(tableName))  {
+					br.close();
 				    return true;
+				}
 				s = br.readLine();
 			}
 			br.close();
@@ -337,19 +406,23 @@ public class DBApp {
 						
 						if(!split[2].equals(htblColNameValue.get(s).getClass().toString().substring(6))) {
 							br.close();
-//							System.out.println(st);
+							
 //							System.out.println(htblColNameValue.get(s).getClass().toString().substring(6));
 				         	throw new DBAppException("wrong datatype");
 						}
 						String type = split[2].substring(10);
 						boolean typeTmam =true;
 						if(type.equals("Integer")) {
+							
 							typeTmam = Integer.parseInt(htblColNameValue.get(s).toString()) >= Integer.parseInt(split[6]) &&
 									Integer.parseInt(htblColNameValue.get(s).toString()) <= Integer.parseInt(split[7]);
 						}
 						else if(type.equals("String")) {
-							typeTmam = htblColNameValue.get(s).toString().compareTo(split[6]) >=0 &&
-									htblColNameValue.get(s).toString().compareTo(split[7]) <=0;
+//							System.out.println(st);
+//							System.out.println(htblColNameValue.get(s));
+//							System.out.println(strTableName);
+							typeTmam = htblColNameValue.get(s).toString().toLowerCase().compareTo(split[6].toLowerCase()) >=0 &&
+									htblColNameValue.get(s).toString().toLowerCase().compareTo(split[7].toLowerCase()) <=0;
 						}
 						else if(type.equals("Double")) {
 							typeTmam = Double.parseDouble(htblColNameValue.get(s).toString()) >= Double.parseDouble(split[6]) &&
@@ -362,7 +435,7 @@ public class DBApp {
 							
 						}
 						if(!typeTmam) {
-							System.out.println(split[2]);
+//							System.out.println(split[2]);
 							br.close();
 							throw new DBAppException("error");
 							}
@@ -375,6 +448,7 @@ public class DBApp {
 				}
 				br.close();
 			}
+			
 			
 			return true;
 		} catch (Exception e) {			
@@ -401,6 +475,7 @@ public class DBApp {
         int mid = 0;
         for(i =0; i<table.getPages().size();i++) {
              ObjectInputStream pageIn = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + tableName + table.getPages().get(i) + ".ser"));
+//             System.out.println("src/main/resources/data/" + tableName + table.getPages().get(i) + ".ser");
              Vector <Record> vector = (Vector <Record> ) pageIn.readObject();
              low = 0;
              mid = 0;
@@ -438,7 +513,7 @@ public class DBApp {
 			return res;
         }
 		catch(Exception e) {
-//						e.printStackTrace();
+						e.printStackTrace();
 		 throw new DBAppException("bs");
 		}
 	}
@@ -457,14 +532,11 @@ public class DBApp {
 		return r;
 	}
 	
-	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException {
+	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
 		DBApp x = new DBApp();
 		x.init();
 		
-//		ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + "pcs.ser"));
-//		
-//	    Table table = (Table) in.readObject();
-	    
+	    // ---------------------1 Table creation, see whatsapp list and change values of htbl according to the test case------------------------
 	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
 		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
 		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
@@ -477,86 +549,45 @@ public class DBApp {
 		htblColNameMax.put("id", "1000000");
 		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
 		htblColNameMax.put("gpa", "4");
+		x.createTable("bla4", "id", htblColNameType, htblColNameMin, htblColNameMax);
+		
+		
+		// ---------------------2 Table insertion,deletion and update--------------------------
 		Hashtable <String,Object> htblColNameValue = new Hashtable( );
+		
 //	    htblColNameValue.put("id", new Integer(15)); 
-	    htblColNameValue.put("name",new String("zakya shwaya")); 
-//	    htblColNameValue.put("gpa", new Double(3.0)); 
+//	    htblColNameValue.put("hours",7.0); 
+	    htblColNameValue.put("id","43-0271"); 
+//	    String dateString = "Tue May 14 00:00:00 EET 1901";
+//	    SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
+//	    Date date = dateFormat.parse(dateString);
+//	    dateFormat.applyPattern("yyyy-MM-dd");
+//	    String formattedDate = dateFormat.format(date);
+//	    htblColNameValue.put("gpa", new Double(3)); 
 		
-//	    x.insertIntoTable("blabla", htblColNameValue);
-//	    x.updateTable("blabla", "1", htblColNameValue);
-//	    x.deleteFromTable("blabla", htblColNameValue);
+//	    x.insertIntoTable("students", htblColNameValue);
+//	    x.updateTable("transcripts", "4.9996", htblColNameValue);
+//	    x.deleteFromTable("courses", htblColNameValue);
 	    
-//		Hashtable <String,Object> htblColNameValue = new Hashtable( );
-//	    htblColNameValue.put("id", new String( "99-9010" )); 
-//	    htblColNameValue.put("first_name", new String("Zaky" ) ); 
-//	    htblColNameValue.put("last_name", new String("noor" ) ); 
-//	    htblColNameValue.put("gpa", new Double( 3.00 ) ); 
-//	    htblColNameValue.put("dob",  new Date(1999 - 1900, 4 - 1, 1));
-//	    x.insertIntoTable( table.getTableName() , htblColNameValue ); 
-//		x.deleteFromTable(table.getTableName(), htblColNameValue);
-//		
-		
-		
-//		x.updateTable("pcs", "4230", test);
-//		Vector <Record> v = x.deserializePage(table, 1);
-//		System.out.println(v.size());
-//		for(int i = 0;i<v.size();i++) {
-//			System.out.println(v.get(i).getV().get("id"));
-//		}
-//		System.out.println();
-//		Vector <Record> v2 = x.deserializePage(table, 2);
-//		System.out.println(v2.size());
-//		for(int i = 0;i<v2.size();i++) {
-//			
-//			System.out.println(v2.get(i).getV().get("id"));
-//		}
-		
-		
-//		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
-//		htblColNameType.put("id", "java.lang.Integer");
-//		htblColNameType.put("name", "java.lang.String");
-//		htblColNameType.put("gpa", "java.lang.Double");
-//		htblColNameMin.put("id", "1");
-//		htblColNameMin.put("name", "a");
-//		htblColNameMin.put("gpa", "1");
-//		htblColNameMax.put("id", "1000000");
-//		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
-//		htblColNameMax.put("gpa", "4");
-//		x.createTable("hassan","id",htblColNameType,htblColNameMin,htblColNameMax);
-//		System.out.println(x.checkIfTableExists("transcripts"));
-		
-//		Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
-//		htblColNameType.put("id", "java.lang.Integer");
-//		htblColNameType.put("name", "java.lang.String");
-//		htblColNameType.put("gpa", "java.lang.Double");
-//		Vector <Integer> v = new Vector<Integer>();
-//		v.add(2);
-//		v.add(3);
-//		v.add(4);
-//		v.add(1, 5);
-//		System.out.println(v);
-		// 2 5 3 4
-//		System.out.println(htblColNameType.get("b"));
-		
-//	
-
-//		x.createTable( "test", "id", htblColNameType,htblColNameMin,htblColNameMax);
-//		x.createTable( "test2", "id", htblColNameType,htblColNameMin,htblColNameMax);
-//		x.createTable(null, null, null, null, null);
-		
 		try {
-			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser"));
+			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
 			Table b = (Table) inp.readObject();
 			System.out.println(b.getTableName());
 			System.out.println(b.getPages());
 			System.out.println(b.getRows());
 			Vector <Record>  v = x.deserializePage(b, 1);
 			System.out.println(v);
+			System.out.println(v.size());
 			Vector <Record>  v2 = x.deserializePage(b, 2);
 			System.out.println(v2);
+			System.out.println(v2.size());
+			Vector <Record>  v3 = x.deserializePage(b, 3);
+			System.out.println(v3);
+			System.out.println(v3.size());
+			Vector <Record>  v4 = x.deserializePage(b, 4);
+			System.out.println(v4);
+			System.out.println(v4.size());
+			inp.close();
 		}
 		catch(Exception e)
 		{}

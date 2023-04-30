@@ -19,6 +19,7 @@ public class Record implements Serializable {
 	public boolean compareRecords( Hashtable <String,Object> h) {
 		Set <String> s = h.keySet();
 		for(String s2 : s) {
+			
 			if(!h.get(s2).equals(v.get(s2)))
 				return false;
 		}
