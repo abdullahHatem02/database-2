@@ -460,28 +460,28 @@ public class DBApp {
 	}
 	
 	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException {
-		DBApp x = new DBApp();
-		x.init();
+//		DBApp x = new DBApp();
+//		x.init();
 		
 //		ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + "pcs.ser"));
 //		
 //	    Table table = (Table) in.readObject();
-	    
-	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
-		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
-		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
-		htblColNameType.put("id", "java.lang.Integer");
-		htblColNameType.put("name", "java.lang.String");
-		htblColNameType.put("gpa", "java.lang.Double");	    
-		htblColNameMin.put("id", "1");
-		htblColNameMin.put("name", "a");
-		htblColNameMin.put("gpa", "1");
-		htblColNameMax.put("id", "1000000");
-		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
-		htblColNameMax.put("gpa", "4");
+//	    
+//	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
+//		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
+//		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
+//		htblColNameType.put("id", "java.lang.Integer");
+//		htblColNameType.put("name", "java.lang.String");
+//		htblColNameType.put("gpa", "java.lang.Double");	    
+//		htblColNameMin.put("id", "1");
+//		htblColNameMin.put("name", "a");
+//		htblColNameMin.put("gpa", "1");
+//		htblColNameMax.put("id", "1000000");
+//		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
+//		htblColNameMax.put("gpa", "4");
 		Hashtable <String,Object> htblColNameValue = new Hashtable( );
-//	    htblColNameValue.put("id", new Integer(15)); 
-	    htblColNameValue.put("name",new String("zakya shwaya")); 
+	    htblColNameValue.put("id", new Integer(15)); 
+//	    htblColNameValue.put("name",new String("zakya shwaya")); 
 //	    htblColNameValue.put("gpa", new Double(3.0)); 
 		
 //	    x.insertIntoTable("blabla", htblColNameValue);
@@ -549,20 +549,30 @@ public class DBApp {
 //		x.createTable( "test2", "id", htblColNameType,htblColNameMin,htblColNameMax);
 //		x.createTable(null, null, null, null, null);
 		
-		try {
-			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser"));
-			Table b = (Table) inp.readObject();
-			System.out.println(b.getTableName());
-			System.out.println(b.getPages());
-			System.out.println(b.getRows());
-			Vector <Record>  v = x.deserializePage(b, 1);
-			System.out.println(v);
-			Vector <Record>  v2 = x.deserializePage(b, 2);
-			System.out.println(v2);
+//		try {
+//			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser"));
+//			Table b = (Table) inp.readObject();
+//			System.out.println(b.getTableName());
+//			System.out.println(b.getPages());
+//			System.out.println(b.getRows());
+//			Vector <Record>  v = x.deserializePage(b, 1);
+//			System.out.println(v);
+//			Vector <Record>  v2 = x.deserializePage(b, 2);
+//			System.out.println(v2);
+//		}
+//		catch(Exception e)
+//		{}
+
+		Vector <Object> v = new Vector <Object>();
+		Object x = new Record(htblColNameValue);
+		v.add(x);
+		System.out.println(v.size());
+//		x = null;
+		v.remove(x);
+		System.out.println(v);
+		System.out.println(v.size());
 		}
-		catch(Exception e)
-		{}
-	}
+		
 
 	
 	

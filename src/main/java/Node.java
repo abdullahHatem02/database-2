@@ -1,6 +1,8 @@
 package main.java;
 import java.util.*;
 
+import main.java.Record;
+
 public class Node {
 //    private final int depth;
     private Object[] boundsX;
@@ -16,7 +18,7 @@ public class Node {
 		this.boundsY = boundsY;
 		this.boundsZ = boundsZ;
 		this.maxEntries = maxEntries;
-		
+		 entries = new ArrayList <List <Record>>();
 		this.children = null;
 	}
     
@@ -167,8 +169,84 @@ public class Node {
     }
 
     
-    public void search(double[] bounds, List<Object[]> results) {
-        // ...
-//        results.addAll(this.entries); // add references to objects in the database to the results list
+    public List<Object>[] search(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1) {
+//    	Object x = r.getV().get(boundsX[0]);
+//		Object y = r.getV().get(boundsY[0]);
+//		Object z = r.getV().get(boundsZ[0]);
+    	 List<Object>[] m = new List[2];
+    	List<List<Record>> res = new ArrayList<>();
+    	List<Node> res2 = new ArrayList<>();
+		for(int j = 0; j<children.length; j++) {
+			if(compareObjects(x, children[j].boundsX[1]) >= 0  && compareObjects(x, children[j].boundsX[2]) < 0 &&
+					compareObjects(y, children[j].boundsY[1]) >= 0 && compareObjects(y, children[j].boundsY[2]) < 0 &&
+					compareObjects(z, children[j].boundsZ[1]) >= 0 && compareObjects(z, children[j].boundsZ[2]) < 0) {
+				for(int i=0; i<children[j].entries.size(); i++) {
+					if( (compareObjects(x, children[j].entries.get(i).get(0).getV().get(boundsX[0])) == 0 || !x1) && 
+							(compareObjects(y, children[j].entries.get(i).get(0).getV().get(boundsY[0])) == 0 || !y1) && 
+							(compareObjects(z, children[j].entries.get(i).get(0).getV().get(boundsZ[0])) == 0 || !z1) ) {
+						res.add(children[j].entries.get(i));
+						res2.add(children[j]);
+					}
+				}
+			}
+		}
+		
+		 m[0] = (List<Object>) (List<?>) res;
+		 m[1] = (List<Object>) (List<?>) res2;
+	
+		
+		return m;
+    }
+    
+    public void update(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1, Hashtable <String, Object> hash) {
+    	List<Object> [] result = search(x,y,z,x1,y1,z1);
+    	List<List<Record>> recs = (List<List<Record>>) (List<?>) result[0];
+    	List<Node> node = (List<Node>) (List<?>) result[1];
+    	
+    	for(int i = 0; i<recs.size(); i++) {
+    		for(int j=0; j<recs.get(i).size(); i++){
+    			Record r = recs.get(i).get(j);
+    			Set<String> set = hash.keySet();
+    			for(String s:set) {
+    				r.getV().put(s, hash.get(s));
+    			}
+    			for(int k=0; k<node.size(); k++) {
+    				for(int n=0; n<node.get(k).entries.size(); n++) {
+    					if(node.get(k).entries.get(n) == r) {
+    						node.get(k).entries.remove(n);
+    						insert(r);
+    					}
+    				}
+    			}
+    		}
+    	}
+    }
+    public List<List<Record>> delete(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1, Hashtable <String, Object> hash) {
+    	//Hahstable is missing
+    	List<Object> [] result = search(x,y,z,x1,y1,z1);
+    	List<List<Record>> recs = (List<List<Record>>) (List<?>) result[0];
+    	List<Node> node = (List<Node>) (List<?>) result[1];
+    	
+    	for(int i = 0; i<recs.size(); i++) {
+    		for(int j=0; j<recs.get(i).size(); i++){
+    			Record r = recs.get(i).get(j);
+    			Set<String> set = hash.keySet();
+    			//boolean remove = false; //remove mn el LIST el han-remove mnhaa (f e3kesy e l logic) ~Youstina
+    			for(String s:set) {
+    				if (compareObjects(r.getV().get(s), hash.get(s)) != 0){
+    						recs.get(i).remove(j);
+    						 break;
+    				}
+    			}
+    			for(int k=0; k<node.size(); k++) {
+    				for(int n=0; n<node.get(k).entries.size(); n++) {
+    					if(node.get(k).entries.get(n) == r) {
+    						node.get(k).entries.remove(n);
+    					}
+    				}
+    			}
+    		}
+    	}
+    	return recs; //3shan ne3mlhom remove ml table b2aa
     }
 }

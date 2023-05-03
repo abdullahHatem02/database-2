@@ -2,9 +2,9 @@ package main.java;
 import java.io.Serializable;
 import java.util.*;
 public class Record implements Serializable {
-	/**
-	 * 
-	 */
+	
+	int page;
+	
 	private static final long serialVersionUID = 1L;
 	private Hashtable <String,Object> v;
 	
@@ -29,7 +29,12 @@ public class Record implements Serializable {
 	public String toString() {
 		return v.toString();
 	}
-	
+	public int getPage() {
+		return page;
+	}
+	public void setPage(int x) {
+		page=x;
+	}
 //	public void setV(Vector <Object> v) {
 //		this.v = v;
 //	}
