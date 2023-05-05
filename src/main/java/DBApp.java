@@ -316,6 +316,157 @@ public class DBApp {
 			throw new DBAppException(e.getMessage());
 		}		
 	}
+	
+//	public Iterator selectFromTable(SQLTerm[] arrSQLTerms,String[] strarrOperators) throws DBAppException {
+//		//handle law sqlterm fady
+//		checkIfTableExists(arrSQLTerms[0]._strTableName);
+//		String strTableName = arrSQLTerms[0]._strTableName;
+//		return null;
+//	}
+	
+	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException  {
+		//handle law sqlterm fady
+		try {
+		checkIfTableExists(arrSQLTerms[0]._strTableName);
+		String strTableName = arrSQLTerms[0]._strTableName;
+		ObjectInputStream in;
+		in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
+		Table table = (Table) in.readObject();
+		Vector <Record> v = deserializePage(table, 1);
+	    Vector <Vector <Record>> result = new Vector <Vector <Record>>();
+	    for(int i =0;i<arrSQLTerms.length;i++)
+	    	result.add(new Vector <Record>());
+	    for (int i = 0; i < v.size(); i++) {
+	        Record record = v.elementAt(i);
+	        
+	        boolean satisfiesTerms = false;
+	        for (int j = 0; j < arrSQLTerms.length; j++) {
+	            SQLTerm term = arrSQLTerms[j];
+	            Object value = record.getV().get(term._strColumnName);
+//	            System.out.println(value);
+	            switch (term._strOperator) {
+	                case ">":
+	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) > 0;
+	                    break;
+	                case ">=":
+	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) >= 0;
+	                    break;
+	                case "<":
+	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) < 0;
+	                    break;
+	                case "<=":
+	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) <= 0;
+	                    break;
+	                case "!=":
+	                    satisfiesTerms = !value.equals(term._objValue);
+	                    break;
+	                case "=":
+	                    satisfiesTerms = value.equals(term._objValue);
+	                    break;
+	            }
+	            if (satisfiesTerms) {
+		            result.get(j).add(record);
+		        }
+	            if (!satisfiesTerms) {
+//	                break; // short circuit evaluation
+	            }
+	        }
+	        
+	        
+	    }
+	    //Gebna results el bet satisfy ay condition
+	    //result1//result2//result3
+//	    for(int i = 0;i<result.size();i++)
+//	    	System.out.println(result.get(i));	
+	    if (strarrOperators == null) {
+	        return result.iterator();
+	    } else {
+	    	Vector <Record> resultFinal = new Vector <Record>();
+	    	
+	    	for(int i =0;i<strarrOperators.length;i++) {
+//	    		System.out.println(result.size());
+	    		Vector <Vector <Record>> resultInt = new Vector <Vector <Record>>();
+	    		resultInt.add(result.get(0));
+	    		resultInt.add(result.get(1));
+	    		result.remove(0);
+	    		result.remove(0);
+	    		if(strarrOperators[i] == "AND") {
+	    		 result.add(0,intersect(resultInt.get(0),resultInt.get(1)));
+	    		}
+	    		else if(strarrOperators[i] == "OR") {
+	    			result.add(0,union(resultInt.get(0),resultInt.get(1)));
+		    		}
+	    		else result.add(0,symmetricDifference(resultInt.get(0),resultInt.get(1)));
+	    		}
+	    	
+	    	 return result.get(0).iterator();
+	    	}
+	   
+	    }
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new DBAppException();
+		}
+	}
+
+	private Vector<Record> intersect(Vector<Record> r1, Vector<Record> r2) {
+	    Vector<Record> result = new Vector<Record>();
+	   
+//	    System.out.println(r2);
+//	    for(Record r: r2) {
+//	    	if( !(r.getV().get("gpa") instanceof Null) && (Double) r.getV().get("gpa")>1.8 &&)
+//	    		System.out.println(r);
+//	    }
+	    if (r1 == null || r1.isEmpty() || r2 == null || r2.isEmpty()) {
+	        return result;
+	    }
+	    for (Record r : r2) {
+	    	
+	        if (r1.contains(r)) {
+//	        	System.out.println(r);
+	            result.add(r);
+//	            System.out.println(r2.contains(r));
+	        }
+	    }
+//	    System.out.println(result);
+//	    System.out.println(result.size());
+//	    System.out.println(r1.size()+ "  " + r2.size());
+	    return result;
+	}
+
+
+	private Vector<Record> union(Vector<Record> r1, Vector<Record> r2) {
+	    Vector<Record> result = new Vector<Record>();
+	    if (r1 != null) {
+	        result.addAll(r1);
+	    }
+	    if (r2 != null) {
+	        for (Record r : r2) {
+	            if (!result.contains(r)) {
+	                result.add(r);
+	            }
+	        }
+	    }
+	    return result;
+	}
+
+
+	private Vector<Record> symmetricDifference(Vector<Record> r1, Vector<Record> r2) {
+	    Vector<Record> result = new Vector<Record>();
+	    if (r1 == null || r1.isEmpty()) {
+	        return r2;
+	    }
+	    if (r2 == null || r2.isEmpty()) {
+	        return r1;
+	    }
+	    Vector<Record> intersection = intersect(r1, r2);
+	    Vector<Record> union = union(r1, r2);
+	    result.addAll(union);
+	    result.removeAll(intersection);
+	    return result;
+	}
+
+
 
 	private boolean checkIfTableExists(String tableName) throws DBAppException{
 		BufferedReader br = null;
@@ -532,9 +683,35 @@ public class DBApp {
 		return r;
 	}
 	
-//	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
-//		DBApp x = new DBApp();
-//		x.init();
+	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
+		DBApp x = new DBApp();
+		x.init();
+		SQLTerm[] arrSQLTerms;
+		arrSQLTerms = new SQLTerm[3];
+		arrSQLTerms[0] = new SQLTerm();
+		arrSQLTerms[1] = new SQLTerm();
+		arrSQLTerms[2] = new SQLTerm();
+		arrSQLTerms[2]._strTableName = "students";
+		arrSQLTerms[2]._strColumnName= "first_name";
+		arrSQLTerms[2]._strOperator = "=";
+		arrSQLTerms[2]._objValue = "WutyhM";
+		arrSQLTerms[1]._strTableName = "students";
+		arrSQLTerms[1]._strColumnName= "gpa";
+		arrSQLTerms[1]._strOperator = ">";
+		arrSQLTerms[1]._objValue = new Double( 1.8 );
+		arrSQLTerms[0]._strTableName = "students";
+		arrSQLTerms[0]._strColumnName= "gpa";
+		arrSQLTerms[0]._strOperator = "<";
+		arrSQLTerms[0]._objValue = new Double( 1.5 );
+		String[]strarrOperators = new String[2];
+		strarrOperators[0] = "OR";
+		strarrOperators[1] = "OR";
+//		 select * from Student where name = “John Noor” or gpa = 1.5;
+		Iterator resultSet = x.selectFromTable(arrSQLTerms , strarrOperators);
+		while(resultSet.hasNext()) {
+			System.out.println(resultSet.next());
+		}
+		
 //		
 //	    // ---------------------1 Table creation, see whatsapp list and change values of htbl according to the test case------------------------
 //	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
@@ -569,14 +746,14 @@ public class DBApp {
 ////	    x.updateTable("transcripts", "4.9996", htblColNameValue);
 ////	    x.deleteFromTable("courses", htblColNameValue);
 //	    
-//		try {
-//			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
-//			Table b = (Table) inp.readObject();
-//			System.out.println(b.getTableName());
-//			System.out.println(b.getPages());
-//			System.out.println(b.getRows());
-//			Vector <Record>  v = x.deserializePage(b, 1);
-//			System.out.println(v);
+		try {
+			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
+			Table b = (Table) inp.readObject();
+			System.out.println(b.getTableName());
+			System.out.println(b.getPages());
+			System.out.println(b.getRows());
+			Vector <Record>  v = x.deserializePage(b, 1);
+			System.out.println(v);
 //			System.out.println(v.size());
 //			Vector <Record>  v2 = x.deserializePage(b, 2);
 //			System.out.println(v2);
@@ -588,10 +765,10 @@ public class DBApp {
 //			System.out.println(v4);
 //			System.out.println(v4.size());
 //			inp.close();
-//		}
-//		catch(Exception e)
-//		{}
-//	}
+		}
+		catch(Exception e)
+		{}
+	}
 
 	
 	

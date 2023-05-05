@@ -71,8 +71,8 @@ public class Octree implements Serializable {
 
 //select
 //SQL TERM
-//BONUS
 //CREATE INDEX
 //MOSHKELA NESAMA3 FI INSERT/DELETE
 //INSERT PK OR INDEX??
 //ADD PAGE NUMBER TO RECORDS
+//BONUS

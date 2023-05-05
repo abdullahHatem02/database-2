@@ -312,30 +312,27 @@ public class Node implements Serializable {
         }
     }
     public static void main(String[] args) {
-    	Object [] x1 = {"x",1,10};
-    	Object [] x2 = {"y",1,10};
-    	Object [] x3 = {"z",1,10};
-//    	Octree x = new Octree("1st",new Object[]{"x", 0, 10}, new Object[]{"y", 0, 10}, new Object[]{"z", 0, 10});
+//    	Octree x = new Octree("1st",new Object[]{"x", "a","z" }, new Object[]{"y", 0, 10}, new Object[]{"z", 0, 10});
 		Octree x = Octree.deserialiazeOctree("1st");
 		Hashtable <String,Object> htblColNameValue = new Hashtable();
-		htblColNameValue.put("x", 2);
-//		 htblColNameValue.put("y", 1);
+		htblColNameValue.put("x", "k");
+		 htblColNameValue.put("y", 5);
 		 htblColNameValue.put("z", 9);
 		
 //		   x.update(2, 4, 5, true, false, false, htblColNameValue);
-//		 x.insert(new Record(htblColNameValue));
-		 List<Object> [] result = (x.search(2, 1, 1, true, false,false));
-		 List<List<Record>> recs = (List<List<Record>>) (List<?>) result[0];
-	     List<Node> nodes = (List<Node>) (List<?>) result[1];
-	     System.out.println(recs);
-	     
-	     System.out.println(nodes.size());
-	     for(int i = 0; i<nodes.size();i++) {
-	    	 System.out.println(nodes.get(i).entries);
-	     }
+		 x.insert(new Record(htblColNameValue));
+//		 List<Object> [] result = (x.search(2, 1, 1, true, false,false));
+//		 List<List<Record>> recs = (List<List<Record>>) (List<?>) result[0];
+//	     List<Node> nodes = (List<Node>) (List<?>) result[1];
+//	     System.out.println(recs);
+//	     
+//	     System.out.println(nodes.size());
+//	     for(int i = 0; i<nodes.size();i++) {
+//	    	 System.out.println(nodes.get(i).entries);
+//	     }
 			
 		
-//		x.root.print(0);
+		x.root.print(0);
 	}
 
 }
