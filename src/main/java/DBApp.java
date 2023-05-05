@@ -532,66 +532,66 @@ public class DBApp {
 		return r;
 	}
 	
-	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
-		DBApp x = new DBApp();
-		x.init();
-		
-	    // ---------------------1 Table creation, see whatsapp list and change values of htbl according to the test case------------------------
-	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
-		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
-		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
-		htblColNameType.put("id", "java.lang.Integer");
-		htblColNameType.put("name", "java.lang.String");
-		htblColNameType.put("gpa", "java.lang.Double");	    
-		htblColNameMin.put("id", "1");
-		htblColNameMin.put("name", "a");
-		htblColNameMin.put("gpa", "1");
-		htblColNameMax.put("id", "1000000");
-		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
-		htblColNameMax.put("gpa", "4");
-		x.createTable("bla4", "id", htblColNameType, htblColNameMin, htblColNameMax);
-		
-		
-		// ---------------------2 Table insertion,deletion and update--------------------------
-		Hashtable <String,Object> htblColNameValue = new Hashtable( );
-		
-//	    htblColNameValue.put("id", new Integer(15)); 
-//	    htblColNameValue.put("hours",7.0); 
-	    htblColNameValue.put("id","43-0271"); 
-//	    String dateString = "Tue May 14 00:00:00 EET 1901";
-//	    SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
-//	    Date date = dateFormat.parse(dateString);
-//	    dateFormat.applyPattern("yyyy-MM-dd");
-//	    String formattedDate = dateFormat.format(date);
-//	    htblColNameValue.put("gpa", new Double(3)); 
-		
-//	    x.insertIntoTable("students", htblColNameValue);
-//	    x.updateTable("transcripts", "4.9996", htblColNameValue);
-//	    x.deleteFromTable("courses", htblColNameValue);
-	    
-		try {
-			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
-			Table b = (Table) inp.readObject();
-			System.out.println(b.getTableName());
-			System.out.println(b.getPages());
-			System.out.println(b.getRows());
-			Vector <Record>  v = x.deserializePage(b, 1);
-			System.out.println(v);
-			System.out.println(v.size());
-			Vector <Record>  v2 = x.deserializePage(b, 2);
-			System.out.println(v2);
-			System.out.println(v2.size());
-			Vector <Record>  v3 = x.deserializePage(b, 3);
-			System.out.println(v3);
-			System.out.println(v3.size());
-			Vector <Record>  v4 = x.deserializePage(b, 4);
-			System.out.println(v4);
-			System.out.println(v4.size());
-			inp.close();
-		}
-		catch(Exception e)
-		{}
-	}
+//	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
+//		DBApp x = new DBApp();
+//		x.init();
+//		
+//	    // ---------------------1 Table creation, see whatsapp list and change values of htbl according to the test case------------------------
+//	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
+//		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
+//		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
+//		htblColNameType.put("id", "java.lang.Integer");
+//		htblColNameType.put("name", "java.lang.String");
+//		htblColNameType.put("gpa", "java.lang.Double");	    
+//		htblColNameMin.put("id", "1");
+//		htblColNameMin.put("name", "a");
+//		htblColNameMin.put("gpa", "1");
+//		htblColNameMax.put("id", "1000000");
+//		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
+//		htblColNameMax.put("gpa", "4");
+//		x.createTable("bla4", "id", htblColNameType, htblColNameMin, htblColNameMax);
+//		
+//		
+//		// ---------------------2 Table insertion,deletion and update--------------------------
+//		Hashtable <String,Object> htblColNameValue = new Hashtable( );
+//		
+////	    htblColNameValue.put("id", new Integer(15)); 
+////	    htblColNameValue.put("hours",7.0); 
+//	    htblColNameValue.put("id","43-0271"); 
+////	    String dateString = "Tue May 14 00:00:00 EET 1901";
+////	    SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
+////	    Date date = dateFormat.parse(dateString);
+////	    dateFormat.applyPattern("yyyy-MM-dd");
+////	    String formattedDate = dateFormat.format(date);
+////	    htblColNameValue.put("gpa", new Double(3)); 
+//		
+////	    x.insertIntoTable("students", htblColNameValue);
+////	    x.updateTable("transcripts", "4.9996", htblColNameValue);
+////	    x.deleteFromTable("courses", htblColNameValue);
+//	    
+//		try {
+//			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
+//			Table b = (Table) inp.readObject();
+//			System.out.println(b.getTableName());
+//			System.out.println(b.getPages());
+//			System.out.println(b.getRows());
+//			Vector <Record>  v = x.deserializePage(b, 1);
+//			System.out.println(v);
+//			System.out.println(v.size());
+//			Vector <Record>  v2 = x.deserializePage(b, 2);
+//			System.out.println(v2);
+//			System.out.println(v2.size());
+//			Vector <Record>  v3 = x.deserializePage(b, 3);
+//			System.out.println(v3);
+//			System.out.println(v3.size());
+//			Vector <Record>  v4 = x.deserializePage(b, 4);
+//			System.out.println(v4);
+//			System.out.println(v4.size());
+//			inp.close();
+//		}
+//		catch(Exception e)
+//		{}
+//	}
 
 	
 	
