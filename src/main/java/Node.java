@@ -31,8 +31,24 @@ public class Node implements Serializable {
     
     public void insert(Record r) {
     	if(this.children== null) {
+    		Hashtable <String,Object> x = r.getV();
+    		boolean flagDuplicate = false;
+    		for(int i = 0;i<entries.size();i++) {
+    			if(entries.get(i) != null)
+	    			if(x.get(boundsX[0]).equals(entries.get(i).get(0).getV().get(boundsX[0])) && x.get(boundsY[0]).equals(entries.get(i).get(0).getV().get(boundsY[0])) && x.get(boundsZ[0]).equals(entries.get(i).get(0).getV().get(boundsZ[0]))) {
+	    				entries.get(i).add(r);
+	    				flagDuplicate = true;
+	    				break;
+	    			}	
+    		
+    		}
+    		if(!flagDuplicate) {
+    			List <Record> n = new ArrayList<>();
+    			n.add(r);
+    			entries.add(n);
+    			}
     	//1 2 33 4 
-    	if(maxEntries == entries.size()) { //ehna la2ena el 3ayel bas hoa malyan :3 
+    	if(maxEntries < entries.size()) { //ehna la2ena el 3ayel bas hoa malyan :3 
     		Object midX = getMidValue(boundsX[1], boundsX[2]);
     		Object midY = getMidValue(boundsY[1], boundsY[2]);
     		Object midZ = getMidValue(boundsZ[1], boundsZ[2]);
@@ -57,11 +73,11 @@ public class Node implements Serializable {
     		children [7] = new Node(boundsXUpper,boundsYUpper,boundsZUpper,4);
     		
     		for(int i = 0; i<entries.size();i++) {
-    			Object x = entries.get(i).get(0).getV().get(boundsX[0]);
+    			Object x1 = entries.get(i).get(0).getV().get(boundsX[0]);
     			Object y = entries.get(i).get(0).getV().get(boundsY[0]);
     			Object z = entries.get(i).get(0).getV().get(boundsZ[0]);
     			for(int j = 0; j<children.length; j++) {
-    				if(compareObjects(x, children[j].boundsX[1]) >= 0  && compareObjects(x, children[j].boundsX[2]) < 0 &&
+    				if(compareObjects(x1, children[j].boundsX[1]) >= 0  && compareObjects(x1, children[j].boundsX[2]) < 0 &&
     						compareObjects(y, children[j].boundsY[1]) >= 0 && compareObjects(y, children[j].boundsY[2]) < 0 &&
     						compareObjects(z, children[j].boundsZ[1]) >= 0 && compareObjects(z, children[j].boundsZ[2]) < 0) {
     					children[j].entries.add(entries.get(i));
@@ -70,37 +86,10 @@ public class Node implements Serializable {
     			}
     			
     		}
-    		Object x = r.getV().get(boundsX[0]);
-			Object y = r.getV().get(boundsY[0]);
-			Object z = r.getV().get(boundsZ[0]);
-			for(int j = 0; j<children.length; j++) {
-				if(compareObjects(x, children[j].boundsX[1]) >= 0  && compareObjects(x, children[j].boundsX[2]) < 0 &&
-						compareObjects(y, children[j].boundsY[1]) >= 0 && compareObjects(y, children[j].boundsY[2]) < 0 &&
-						compareObjects(z, children[j].boundsZ[1]) >= 0 && compareObjects(z, children[j].boundsZ[2]) < 0) {
-					List <Record> n = new ArrayList<>();
-	    			n.add(r);
-					children[j].entries.add(n);
-				}
-			}
     		this.entries = null;
     	}
     	else {
-    		Hashtable <String,Object> x = r.getV();
-    		boolean flag = false;
-    		for(int i = 0;i<entries.size();i++) {
-    			if(entries.get(i) != null)
-	    			if(x.get(boundsX[0]).equals(entries.get(i).get(0).getV().get(boundsX[0])) && x.get(boundsY[0]).equals(entries.get(i).get(0).getV().get(boundsY[0])) && x.get(boundsZ[0]).equals(entries.get(i).get(0).getV().get(boundsZ[0]))) {
-	    				entries.get(i).add(r);
-	    				flag = true;
-	    				break;
-	    			}	
     		
-    		}
-    		if(!flag) {
-    			List <Record> n = new ArrayList<>();
-    			n.add(r);
-    			entries.add(n);
-    			}
     	}
     	}
     	else {
@@ -183,20 +172,27 @@ public class Node implements Serializable {
 //    	Object x = r.getV().get(boundsX[0]);
 //		Object y = r.getV().get(boundsY[0]);
 //		Object z = r.getV().get(boundsZ[0]);
+//    	if(children != null) {
+//    		return search(x, y, z, x1, y1, z1);
+//    	}
     	 List<Object>[] m = new List[2];
     	List<List<Record>> res = new ArrayList<>();
     	List<Node> res2 = new ArrayList<>();
 		for(int j = 0; j<children.length; j++) {
-			if(compareObjects(x, children[j].boundsX[1]) >= 0  && compareObjects(x, children[j].boundsX[2]) < 0 &&
-					compareObjects(y, children[j].boundsY[1]) >= 0 && compareObjects(y, children[j].boundsY[2]) < 0 &&
-					compareObjects(z, children[j].boundsZ[1]) >= 0 && compareObjects(z, children[j].boundsZ[2]) < 0) {
+			if( (compareObjects(x, children[j].boundsX[1]) >= 0 || !x1)  && (compareObjects(x, children[j].boundsX[2]) < 0 || !x1) &&
+					(compareObjects(y, children[j].boundsY[1]) >= 0 || !y1) && (compareObjects(y, children[j].boundsY[2]) < 0 ||!y1) &&
+					(compareObjects(z, children[j].boundsZ[1]) >= 0 || !z1) && (compareObjects(z, children[j].boundsZ[2]) < 0) || !z1) {
 				for(int i=0; i<children[j].entries.size(); i++) {
+					
 					if(children[j].entries.get(i).size()>0)
+						
 					if( (compareObjects(x, children[j].entries.get(i).get(0).getV().get(boundsX[0])) == 0 || !x1) && 
 							(compareObjects(y, children[j].entries.get(i).get(0).getV().get(boundsY[0])) == 0 || !y1) && 
 							(compareObjects(z, children[j].entries.get(i).get(0).getV().get(boundsZ[0])) == 0 || !z1) ) {
+						
 						res.add(children[j].entries.get(i));
-						res2.add(children[j]);
+						if(!res2.contains(children[j]))
+							res2.add(children[j]);
 					}
 				}
 			}
@@ -322,15 +318,24 @@ public class Node implements Serializable {
 //    	Octree x = new Octree("1st",new Object[]{"x", 0, 10}, new Object[]{"y", 0, 10}, new Object[]{"z", 0, 10});
 		Octree x = Octree.deserialiazeOctree("1st");
 		Hashtable <String,Object> htblColNameValue = new Hashtable();
-		htblColNameValue.put("x", 4);
-		 htblColNameValue.put("y", 5);
-		 htblColNameValue.put("z", 3);
+		htblColNameValue.put("x", 2);
+//		 htblColNameValue.put("y", 1);
+		 htblColNameValue.put("z", 9);
 		
 //		   x.update(2, 4, 5, true, false, false, htblColNameValue);
-		 x.insert(new Record(htblColNameValue));
+//		 x.insert(new Record(htblColNameValue));
+		 List<Object> [] result = (x.search(2, 1, 1, true, false,false));
+		 List<List<Record>> recs = (List<List<Record>>) (List<?>) result[0];
+	     List<Node> nodes = (List<Node>) (List<?>) result[1];
+	     System.out.println(recs);
+	     
+	     System.out.println(nodes.size());
+	     for(int i = 0; i<nodes.size();i++) {
+	    	 System.out.println(nodes.get(i).entries);
+	     }
 			
 		
-		x.root.print(0);
+//		x.root.print(0);
 	}
 
 }
