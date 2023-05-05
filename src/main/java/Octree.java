@@ -5,15 +5,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.List;
 
-public class Octree {
+public class Octree implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	String name;
 	Node root;
 	
-	public Octree(String name,Object [] boundsX, Object [] boundsZ,Object [] boundsY) {
-		root = new Node(boundsX, boundsY,boundsZ,8);
+	public Octree(String name,Object [] boundsX, Object [] boundsY,Object [] boundsZ) {
+		root = new Node(boundsX, boundsY,boundsZ,4);
 		this.name = name;
 	}
 	public void insert(Record r) {
@@ -26,8 +31,8 @@ public class Octree {
 		root.update(x, y, z, x1, y1, z1, hash);
 		serialiazeOctree();
 	}
-	public void delete(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1) {
-		root.delete(x, y, z, x1, y1, z1);
+	public void delete(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1, Hashtable <String, Object> hash) {
+		root.delete(x, y, z, x1, y1, z1,hash);
 		serialiazeOctree();
 	}
 	public List<Object>[] search(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1) {
