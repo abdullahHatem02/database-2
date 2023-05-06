@@ -1,6 +1,11 @@
 package main.java;
 
-
+//Helper to indicate if the there is an index on the cols
+//search using the octree 
+//1-insert, search 
+//2-Update, if there is an index call update,
+//3-delete, if there is an index , call delete(octree) delete in the OCTET ONLY (COMPARE WITH HTBL), this will return list of records to be deleted.
+//4-select, search in octree if there is an index, filter the list according to the remaining conditions
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -166,7 +171,7 @@ public class DBApp {
 					i++;
 //					System.out.println(currentPage.size());
 //					System.out.println(!table.getPages().contains(index[1]+i));
-					System.out.println(table.getPages().contains(index[1]+i));
+//					System.out.println(table.getPages().contains(index[1]+i));
 				}while( currentPage.size() > maxRowPerPage  );}
 				else {
 				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (table.getPages().lastElement()) +  ".ser"));
@@ -317,156 +322,166 @@ public class DBApp {
 		}		
 	}
 	
-//	public Iterator selectFromTable(SQLTerm[] arrSQLTerms,String[] strarrOperators) throws DBAppException {
-//		//handle law sqlterm fady
-//		checkIfTableExists(arrSQLTerms[0]._strTableName);
-//		String strTableName = arrSQLTerms[0]._strTableName;
-//		return null;
-//	}
-	
 	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException  {
 		//handle law sqlterm fady
+		//bs for primary key
 		try {
 		checkIfTableExists(arrSQLTerms[0]._strTableName);
+		//validate input
+		Vector <Vector <Record>> result = new Vector <Vector <Record>>();
+	    result.add(new Vector <Record>());
 		String strTableName = arrSQLTerms[0]._strTableName;
 		ObjectInputStream in;
 		in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
 		Table table = (Table) in.readObject();
-		Vector <Record> v = deserializePage(table, 1);
-	    Vector <Vector <Record>> result = new Vector <Vector <Record>>();
-	    for(int i =0;i<arrSQLTerms.length;i++)
-	    	result.add(new Vector <Record>());
+		//no pk & no index
+		for(int i0 = 0;i0<table.getPages().size();i0++) {
+			Vector <Record> v = deserializePage(table, i0 +1);
 	    for (int i = 0; i < v.size(); i++) {
 	        Record record = v.elementAt(i);
-	        
-	        boolean satisfiesTerms = false;
+	        boolean satisfiesTerms = strarrOperators!= null && strarrOperators.length >0? false:true;
 	        for (int j = 0; j < arrSQLTerms.length; j++) {
 	            SQLTerm term = arrSQLTerms[j];
 	            Object value = record.getV().get(term._strColumnName);
 //	            System.out.println(value);
 	            switch (term._strOperator) {
+	            //if str[0] === AND satsis = sats &&,||,^  ((Comparable) value).compareTo(term._objValue) > 0;
 	                case ">":
-	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) > 0;
+	                    satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) > 0 : 
+	                    	performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) > 0 );
 	                    break;
 	                case ">=":
-	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) >= 0;
+	                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) >= 0 : 
+	                    	performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) >= 0 );
 	                    break;
 	                case "<":
-	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) < 0;
+	                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) < 0 : 
+	                    	performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) < 0 );
 	                    break;
 	                case "<=":
-	                    satisfiesTerms = ((Comparable) value).compareTo(term._objValue) <= 0;
+	                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) <= 0 : 
+	                    	performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) <= 0 );
 	                    break;
 	                case "!=":
-	                    satisfiesTerms = !value.equals(term._objValue);
+	                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) != 0 : 
+	                    	performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) != 0 );
 	                    break;
 	                case "=":
-	                    satisfiesTerms = value.equals(term._objValue);
+	                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) == 0 : 
+	                    	performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) == 0 );
 	                    break;
 	            }
-	            if (satisfiesTerms) {
-		            result.get(j).add(record);
-		        }
-	            if (!satisfiesTerms) {
-//	                break; // short circuit evaluation
-	            }
+//	            System.out.println(satisfiesTerms);
 	        }
-	        
-	        
-	    }
-	    //Gebna results el bet satisfy ay condition
-	    //result1//result2//result3
-//	    for(int i = 0;i<result.size();i++)
-//	    	System.out.println(result.get(i));	
-	    if (strarrOperators == null) {
-	        return result.iterator();
-	    } else {
-	    	Vector <Record> resultFinal = new Vector <Record>();
-	    	
-	    	for(int i =0;i<strarrOperators.length;i++) {
-//	    		System.out.println(result.size());
-	    		Vector <Vector <Record>> resultInt = new Vector <Vector <Record>>();
-	    		resultInt.add(result.get(0));
-	    		resultInt.add(result.get(1));
-	    		result.remove(0);
-	    		result.remove(0);
-	    		if(strarrOperators[i] == "AND") {
-	    		 result.add(0,intersect(resultInt.get(0),resultInt.get(1)));
-	    		}
-	    		else if(strarrOperators[i] == "OR") {
-	    			result.add(0,union(resultInt.get(0),resultInt.get(1)));
-		    		}
-	    		else result.add(0,symmetricDifference(resultInt.get(0),resultInt.get(1)));
-	    		}
-	    	
+	        if (satisfiesTerms) {
+//	        	System.out.println(record.getV());
+	            result.get(0).add(record);
+	        }   
+	    }}
 	    	 return result.get(0).iterator();
-	    	}
-	   
 	    }
 		catch(Exception e) {
 			e.printStackTrace();
 			throw new DBAppException();
 		}
 	}
-
-	private Vector<Record> intersect(Vector<Record> r1, Vector<Record> r2) {
-	    Vector<Record> result = new Vector<Record>();
-	   
-//	    System.out.println(r2);
-//	    for(Record r: r2) {
-//	    	if( !(r.getV().get("gpa") instanceof Null) && (Double) r.getV().get("gpa")>1.8 &&)
-//	    		System.out.println(r);
-//	    }
-	    if (r1 == null || r1.isEmpty() || r2 == null || r2.isEmpty()) {
-	        return result;
-	    }
-	    for (Record r : r2) {
-	    	
-	        if (r1.contains(r)) {
-//	        	System.out.println(r);
-	            result.add(r);
-//	            System.out.println(r2.contains(r));
-	        }
-	    }
-//	    System.out.println(result);
-//	    System.out.println(result.size());
-//	    System.out.println(r1.size()+ "  " + r2.size());
-	    return result;
+	
+	public void createIndex(String strTableName,String[] strarrColName) throws DBAppException {
+		//1-Tablename,colnames
+		//get min,max vals of columns
+		//Loop on all pages
+		//insert in index if(null) throw exception
+		//update metadatafile
+		checkIfTableExists(strTableName);
+		Object [] x = new Object [3];
+		Object [] y = new Object [3];
+		Object [] z = new Object [3];
+		x[0] = strarrColName[0];
+		y[0] = strarrColName[1];
+		z[0] = strarrColName[2];
+		ObjectInputStream in = null;
+		//Feed x,y,z
+		BufferedReader br = null;
+		FileReader fr = null;
+		try {
+			 fr = new FileReader("src/main/resources/metadata.csv");
+			 br = new BufferedReader(fr);
+			String s = br.readLine();
+			int i = 0;
+			while(s != null) {
+				String [] line = s.split(",");
+				if(line[0].equals(strTableName) && line[1].equals(strarrColName[i]))  {
+					if(i==0) {
+						fr = new FileReader("src/main/resources/metadata.csv");
+						 br = new BufferedReader(fr);
+						x[1] = parsePrimaryKey(line[2], line[6]);x[2]=parsePrimaryKey(line[2], line[7]);}
+					if(i==1) {
+						fr = new FileReader("src/main/resources/metadata.csv");
+						 br = new BufferedReader(fr);
+						y[1] = parsePrimaryKey(line[2], line[6]); y[2]=parsePrimaryKey(line[2], line[7]);}
+					if(i==2) {
+						z[1] = parsePrimaryKey(line[2], line[6]);z[2]=parsePrimaryKey(line[2], line[7]);i++;break;}
+					i++;
+				}
+				s = br.readLine();
+			}
+			
+			br.close();
+			fr.close();
+//			System.out.println(i);
+			if(i<3) throw new DBAppException("COL not found ya ebn el 3abeta");
+		//Create the index
+//			System.out.println(x[0]);
+			Octree index = new Octree(strarrColName[0]+strarrColName[1]+strarrColName[2], x, y, z);
+			
+			//Loop on pages,insert in index -> if (null) throw exception and delete index
+			
+			
+			in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
+			Table table = (Table) in.readObject();
+			//no pk & no index
+			for(i = 0;i<table.getPages().size();i++) {
+				Vector <Record> v = deserializePage(table, i +1);
+			    for (int j = 0; j < v.size(); j++) {
+			    		checkNull(v.get(j));
+			    		index.insert(v.get(j));
+//			    		System.out.println(v.get(i));
+			    	}
+			    v = null;
+			    System.gc();
+		    }
+			in.close();
+			//, edit in metadata file
+			StaticHelpers.editMetadata("src/main/resources/metadata.csv", strTableName, strarrColName, x, y, z);
+			index.root.print(0);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			Octree.deleteIndex(strarrColName[0]+strarrColName[1]+strarrColName[2]);
+			throw new DBAppException(e.getMessage());
+		}
+		
+		
 	}
-
-
-	private Vector<Record> union(Vector<Record> r1, Vector<Record> r2) {
-	    Vector<Record> result = new Vector<Record>();
-	    if (r1 != null) {
-	        result.addAll(r1);
-	    }
-	    if (r2 != null) {
-	        for (Record r : r2) {
-	            if (!result.contains(r)) {
-	                result.add(r);
-	            }
-	        }
-	    }
-	    return result;
+	public void checkNull(Record r) throws DBAppException {
+		Set <String> set = r.getV().keySet();
+		for(String s: set)
+			if(r.getV().get(s) instanceof Null)
+				throw new DBAppException("NULL VALUES IN INDEX");
 	}
-
-
-	private Vector<Record> symmetricDifference(Vector<Record> r1, Vector<Record> r2) {
-	    Vector<Record> result = new Vector<Record>();
-	    if (r1 == null || r1.isEmpty()) {
-	        return r2;
+	
+	public static boolean performOperation(String operator, boolean bool1, boolean bool2) throws DBAppException {
+	    switch (operator) {
+	        case "AND":
+	            return bool1 && bool2;
+	        case "OR":
+	            return bool1 || bool2;
+	        case "XOR":
+	            return bool1 ^ bool2;
+	        default:
+	            throw new DBAppException("Invalid operator: " + operator);
 	    }
-	    if (r2 == null || r2.isEmpty()) {
-	        return r1;
-	    }
-	    Vector<Record> intersection = intersect(r1, r2);
-	    Vector<Record> union = union(r1, r2);
-	    result.addAll(union);
-	    result.removeAll(intersection);
-	    return result;
 	}
-
-
 
 	private boolean checkIfTableExists(String tableName) throws DBAppException{
 		BufferedReader br = null;
@@ -686,74 +701,42 @@ public class DBApp {
 	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
 		DBApp x = new DBApp();
 		x.init();
-		SQLTerm[] arrSQLTerms;
-		arrSQLTerms = new SQLTerm[3];
-		arrSQLTerms[0] = new SQLTerm();
-		arrSQLTerms[1] = new SQLTerm();
-		arrSQLTerms[2] = new SQLTerm();
-		arrSQLTerms[2]._strTableName = "students";
-		arrSQLTerms[2]._strColumnName= "first_name";
-		arrSQLTerms[2]._strOperator = "=";
-		arrSQLTerms[2]._objValue = "WutyhM";
-		arrSQLTerms[1]._strTableName = "students";
-		arrSQLTerms[1]._strColumnName= "gpa";
-		arrSQLTerms[1]._strOperator = ">";
-		arrSQLTerms[1]._objValue = new Double( 1.8 );
-		arrSQLTerms[0]._strTableName = "students";
-		arrSQLTerms[0]._strColumnName= "gpa";
-		arrSQLTerms[0]._strOperator = "<";
-		arrSQLTerms[0]._objValue = new Double( 1.5 );
-		String[]strarrOperators = new String[2];
-		strarrOperators[0] = "OR";
-		strarrOperators[1] = "OR";
-//		 select * from Student where name = “John Noor” or gpa = 1.5;
-		Iterator resultSet = x.selectFromTable(arrSQLTerms , strarrOperators);
-		while(resultSet.hasNext()) {
-			System.out.println(resultSet.next());
-		}
-		
-//		
-//	    // ---------------------1 Table creation, see whatsapp list and change values of htbl according to the test case------------------------
-//	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
-//		htblColNameType.put("id", "java.lang.Integer");
-//		htblColNameType.put("name", "java.lang.String");
-//		htblColNameType.put("gpa", "java.lang.Double");	    
-//		htblColNameMin.put("id", "1");
-//		htblColNameMin.put("name", "a");
-//		htblColNameMin.put("gpa", "1");
-//		htblColNameMax.put("id", "1000000");
-//		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
-//		htblColNameMax.put("gpa", "4");
-//		x.createTable("bla4", "id", htblColNameType, htblColNameMin, htblColNameMax);
-//		
-//		
-//		// ---------------------2 Table insertion,deletion and update--------------------------
-//		Hashtable <String,Object> htblColNameValue = new Hashtable( );
-//		
-////	    htblColNameValue.put("id", new Integer(15)); 
-////	    htblColNameValue.put("hours",7.0); 
-//	    htblColNameValue.put("id","43-0271"); 
-////	    String dateString = "Tue May 14 00:00:00 EET 1901";
-////	    SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
-////	    Date date = dateFormat.parse(dateString);
-////	    dateFormat.applyPattern("yyyy-MM-dd");
-////	    String formattedDate = dateFormat.format(date);
-////	    htblColNameValue.put("gpa", new Double(3)); 
-//		
-////	    x.insertIntoTable("students", htblColNameValue);
-////	    x.updateTable("transcripts", "4.9996", htblColNameValue);
-////	    x.deleteFromTable("courses", htblColNameValue);
-//	    
+		x.createIndex("students", new String []{"gpa","dob","first_name"});
+//		SQLTerm[] arrSQLTerms;
+//		arrSQLTerms = new SQLTerm[3];
+//		arrSQLTerms[0] = new SQLTerm();
+//		arrSQLTerms[1] = new SQLTerm();
+//		arrSQLTerms[2] = new SQLTerm();
+//		arrSQLTerms[2]._strTableName = "students";
+//		arrSQLTerms[2]._strColumnName= "first_name";
+//		arrSQLTerms[2]._strOperator = "=";
+//		arrSQLTerms[2]._objValue = "WutyhM";
+//		arrSQLTerms[1]._strTableName = "students";
+//		arrSQLTerms[1]._strColumnName= "gpa";
+//		arrSQLTerms[1]._strOperator = "=";
+//		arrSQLTerms[1]._objValue = new Double( 1.5 );
+//		arrSQLTerms[0]._strTableName = "students";
+//		arrSQLTerms[0]._strColumnName= "gpa";
+//		arrSQLTerms[0]._strOperator = "=";
+//		arrSQLTerms[0]._objValue = new Double( 1.69 );
+//		String[]strarrOperators = new String[2];
+//		strarrOperators[0] = "AND";
+//		strarrOperators[1] = "AND";
+////		 select * from Student where name = “John Noor” or gpa = 1.5;
+//		Iterator resultSet = x.selectFromTable(arrSQLTerms , strarrOperators);
+//		while(resultSet.hasNext()) {
+//			System.out.println(resultSet.next());
+//		}
 		try {
-			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
-			Table b = (Table) inp.readObject();
-			System.out.println(b.getTableName());
-			System.out.println(b.getPages());
-			System.out.println(b.getRows());
-			Vector <Record>  v = x.deserializePage(b, 1);
-			System.out.println(v);
+//			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
+//			Table b = (Table) inp.readObject();
+//			System.out.println(b.getTableName());
+//			System.out.println(b.getPages());
+//			System.out.println(b.getRows());
+//			Vector <Record>  v = x.deserializePage(b, 1);
+//			System.out.println(v);
+//			Octree y = Octree.deserialiazeOctree("gpadobfirst_name");
+//			y.root.print(0);
 //			System.out.println(v.size());
 //			Vector <Record>  v2 = x.deserializePage(b, 2);
 //			System.out.println(v2);

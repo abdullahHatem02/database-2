@@ -1,5 +1,6 @@
 package main.java;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -18,10 +19,13 @@ public class Octree implements Serializable {
 	Node root;
 	
 	public Octree(String name,Object [] boundsX, Object [] boundsY,Object [] boundsZ) {
-		root = new Node(boundsX, boundsY,boundsZ,4);
+		root = new Node(boundsX, boundsY,boundsZ,16);
+//		System.out.println(boundsY[2] +"YYY");
 		this.name = name;
 	}
 	public void insert(Record r) {
+//		System.out.println(r + "hereoctet");
+		
 		root.insert(r);
 		serialiazeOctree();
 	}
@@ -67,12 +71,15 @@ public class Octree implements Serializable {
 		return r;
 		
 	}
+	public static void deleteIndex(String name) {
+		File file = new File("src/main/resources/data/" + name  +".ser");
+		System.out.println(file.delete());
+	}
 }
 
 //select
 //SQL TERM
 //CREATE INDEX
 //MOSHKELA NESAMA3 FI INSERT/DELETE
-//INSERT PK OR INDEX??
 //ADD PAGE NUMBER TO RECORDS
 //BONUS

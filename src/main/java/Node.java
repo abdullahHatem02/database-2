@@ -63,14 +63,14 @@ public class Node implements Serializable {
     		Object [] boundsZLower = {boundsZ[0], boundsZ[1],midZ}; //e
     		Object [] boundsZUpper = {boundsZ[0],midZ,boundsZ[2]}; //f
     		
-    		children [0] = new Node(boundsXLower,boundsYLower,boundsZLower,4);
-    		children [1] = new Node(boundsXLower,boundsYLower,boundsZUpper,4);
-    		children [2] = new Node(boundsXLower,boundsYUpper,boundsZLower,4);
-    		children [3] = new Node(boundsXLower,boundsYUpper,boundsZUpper,4);
-    		children [4] = new Node(boundsXUpper,boundsYLower,boundsZLower,4);
-    		children [5] = new Node(boundsXUpper,boundsYLower,boundsZUpper,4);
-    		children [6] = new Node(boundsXUpper,boundsYUpper,boundsZLower,4);
-    		children [7] = new Node(boundsXUpper,boundsYUpper,boundsZUpper,4);
+    		children [0] = new Node(boundsXLower,boundsYLower,boundsZLower,16);
+    		children [1] = new Node(boundsXLower,boundsYLower,boundsZUpper,16);
+    		children [2] = new Node(boundsXLower,boundsYUpper,boundsZLower,16);
+    		children [3] = new Node(boundsXLower,boundsYUpper,boundsZUpper,16);
+    		children [4] = new Node(boundsXUpper,boundsYLower,boundsZLower,16);
+    		children [5] = new Node(boundsXUpper,boundsYLower,boundsZUpper,16);
+    		children [6] = new Node(boundsXUpper,boundsYUpper,boundsZLower,16);
+    		children [7] = new Node(boundsXUpper,boundsYUpper,boundsZUpper,16);
     		
     		for(int i = 0; i<entries.size();i++) {
     			Object x1 = entries.get(i).get(0).getV().get(boundsX[0]);
@@ -81,7 +81,7 @@ public class Node implements Serializable {
     						compareObjects(y, children[j].boundsY[1]) >= 0 && compareObjects(y, children[j].boundsY[2]) < 0 &&
     						compareObjects(z, children[j].boundsZ[1]) >= 0 && compareObjects(z, children[j].boundsZ[2]) < 0) {
     					children[j].entries.add(entries.get(i));
-    					System.out.println(entries.get(i));
+//    					System.out.println(entries.get(i));
     				}
     			}
     			
@@ -124,8 +124,8 @@ public class Node implements Serializable {
             return (T) Double.valueOf(mid);
         } else  {
         	int N = ((String) (bounds2)).length();
-        	String S = ((String) (bounds2));
-        	String T = ((String) (bounds3));
+        	String S = ((String) (bounds2)).toLowerCase();
+        	String T = ((String) (bounds3)).toLowerCase();
         	int[] a1 = new int[N + 1];
         	 
             for (int i = 0; i < N; i++) {
@@ -158,7 +158,7 @@ public class Node implements Serializable {
         if (obj1 instanceof Double && obj2 instanceof Double) {
             return Double.compare((Double) obj1, (Double) obj2);
         } else if (obj1 instanceof String && obj2 instanceof String) {
-            return ((String) obj1).compareTo((String) obj2);
+            return (((String) obj1).toLowerCase()).compareTo(((String) obj2).toLowerCase());
         } else if (obj1 instanceof Integer && obj2 instanceof Integer) {
         	
             return Integer.compare((Integer) obj1, (Integer) obj2);
@@ -224,7 +224,7 @@ public class Node implements Serializable {
     					for(int l = 0;l<node.get(k).entries.get(n).size();l++) {
 //    						System.out.println(r);
     						
-        					System.out.println(2);
+//        					System.out.println(2);
 	    					if(node.get(k).entries.get(n).get(l) == r) {
 	    						node.get(k).entries.get(n).remove(l);
 	    						insert(r);
@@ -232,7 +232,7 @@ public class Node implements Serializable {
 	    					}
     					}
     					if(node.get(k).entries.get(n).size() ==0) {
-    						System.out.println("here_______________________________________________");
+//    						System.out.println("here_______________________________________________");
         					node.get(i).entries.remove(n);
         					n--;
         					break;
@@ -250,17 +250,17 @@ public class Node implements Serializable {
     	List<Node> node = (List<Node>) (List<?>) result[1];
     	
     	for(int i = 0; i<recs.size(); i++) {
-    		System.out.println(i);
+//    		System.out.println(i);
     		for(int j=0; j<recs.get(i).size(); j++){
     			Record r = recs.get(i).get(j);
     			Set<String> set = hash.keySet();
     			//boolean remove = false; //remove mn el LIST el han-remove mnhaa (f e3kesy e l logic) ~Youstina
     			for(String s:set) {
-    				System.out.println(r.getV().get(s));
-    				System.out.println(hash.get(s));
-    				System.out.println("---------------");
+//    				System.out.println(r.getV().get(s));
+//    				System.out.println(hash.get(s));
+//    				System.out.println("---------------");
     				if (compareObjects(r.getV().get(s), hash.get(s)) != 0){
-    					System.out.println("heree!!!");
+//    					System.out.println("heree!!!");
     						recs.get(i).remove(j);
     						 break;
     				}
