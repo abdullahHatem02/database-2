@@ -1,8 +1,8 @@
-students,gpa,java.lang.Double,False,gpadobfirst_name,Octree,0.7,5.0
+students,gpa,java.lang.Double,False,idfirst_namegpa,Octree,0.7,5.0
 students,last_name,java.lang.String,False,null,null,AAAAAA,zzzzzz
-students,first_name,java.lang.String,False,gpadobfirst_name,Octree,AAAAAA,zzzzzz
+students,first_name,java.lang.String,False,idfirst_namegpa,Octree,AAAAAA,zzzzzz
 students,dob,java.util.Date,False,gpadobfirst_name,Octree,1990-01-01,2000-12-31
-students,id,java.lang.String,True,null,null,43-0000,99-9999
+students,id,java.lang.String,True,idfirst_namegpa,Octree,43-0000,99-9999
 courses,hours,java.lang.Integer,False,null,null,1,24
 courses,date_added,java.util.Date,True,null,null,1901-01-01,2020-12-31
 courses,course_id,java.lang.String,False,null,null,0000,9999

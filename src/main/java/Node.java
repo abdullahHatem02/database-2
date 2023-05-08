@@ -10,9 +10,9 @@ public class Node implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 //    private final int depth;
-    private Object[] boundsX;
-    private Object[] boundsY;
-    private Object[] boundsZ;
+     Object[] boundsX;
+     Object[] boundsY;
+     Object[] boundsZ;
     private Node[] children;
     private List <List <Record>> entries; // to handle duplicates
     private final int maxEntries;
@@ -34,8 +34,11 @@ public class Node implements Serializable {
     		Hashtable <String,Object> x = r.getV();
     		boolean flagDuplicate = false;
     		for(int i = 0;i<entries.size();i++) {
+//    			System.out.println(entries);
     			if(entries.get(i) != null)
-	    			if(x.get(boundsX[0]).equals(entries.get(i).get(0).getV().get(boundsX[0])) && x.get(boundsY[0]).equals(entries.get(i).get(0).getV().get(boundsY[0])) && x.get(boundsZ[0]).equals(entries.get(i).get(0).getV().get(boundsZ[0]))) {
+	    			if(x.get(boundsX[0]).equals(entries.get(i).get(0).getV().get(boundsX[0]))
+	    					&& x.get(boundsY[0]).equals(entries.get(i).get(0).getV().get(boundsY[0])) 
+	    					&& x.get(boundsZ[0]).equals(entries.get(i).get(0).getV().get(boundsZ[0]))) {
 	    				entries.get(i).add(r);
 	    				flagDuplicate = true;
 	    				break;
@@ -158,11 +161,14 @@ public class Node implements Serializable {
         if (obj1 instanceof Double && obj2 instanceof Double) {
             return Double.compare((Double) obj1, (Double) obj2);
         } else if (obj1 instanceof String && obj2 instanceof String) {
+        	
             return (((String) obj1).toLowerCase()).compareTo(((String) obj2).toLowerCase());
         } else if (obj1 instanceof Integer && obj2 instanceof Integer) {
         	
             return Integer.compare((Integer) obj1, (Integer) obj2);
         } else  {
+//        	System.out.println(obj1);
+//        	System.out.println(obj2);
             return ((Date) obj1).compareTo((Date) obj2);
         } 
     }
@@ -178,17 +184,24 @@ public class Node implements Serializable {
     	 List<Object>[] m = new List[2];
     	List<List<Record>> res = new ArrayList<>();
     	List<Node> res2 = new ArrayList<>();
+    	
+    	
 		for(int j = 0; j<children.length; j++) {
-			if( (compareObjects(x, children[j].boundsX[1]) >= 0 || !x1)  && (compareObjects(x, children[j].boundsX[2]) < 0 || !x1) &&
-					(compareObjects(y, children[j].boundsY[1]) >= 0 || !y1) && (compareObjects(y, children[j].boundsY[2]) < 0 ||!y1) &&
-					(compareObjects(z, children[j].boundsZ[1]) >= 0 || !z1) && (compareObjects(z, children[j].boundsZ[2]) < 0) || !z1) {
+			if( (  !x1 || compareObjects(x, children[j].boundsX[1]) >= 0)  && ( !x1 || compareObjects(x, children[j].boundsX[2]) < 0) &&
+					(!y1 || compareObjects(y, children[j].boundsY[1]) >= 0) && (!y1 || compareObjects(y, children[j].boundsY[2]) < 0) &&
+					(!z1 || compareObjects(z, children[j].boundsZ[1]) >= 0) && (!z1 || compareObjects(z, children[j].boundsZ[2]) < 0)) {
+				if(children[j].children != null) {
+					res.addAll( (ArrayList)  children[j].search(x, y, z, x1, y1, z1)[0]);
+					res2.addAll( (ArrayList)  children[j].search(x, y, z, x1, y1, z1)[1]);
+				}
+				else {
 				for(int i=0; i<children[j].entries.size(); i++) {
-					
+//					System.out.println(x);
 					if(children[j].entries.get(i).size()>0)
 						
-					if( (compareObjects(x, children[j].entries.get(i).get(0).getV().get(boundsX[0])) == 0 || !x1) && 
-							(compareObjects(y, children[j].entries.get(i).get(0).getV().get(boundsY[0])) == 0 || !y1) && 
-							(compareObjects(z, children[j].entries.get(i).get(0).getV().get(boundsZ[0])) == 0 || !z1) ) {
+					if( ( !x1 || compareObjects(x, children[j].entries.get(i).get(0).getV().get(boundsX[0])) == 0 || !x1) && 
+							( !y1 || compareObjects(y, children[j].entries.get(i).get(0).getV().get(boundsY[0])) == 0 || !y1) && 
+							(!z1 || compareObjects(z, children[j].entries.get(i).get(0).getV().get(boundsZ[0])) == 0 || !z1) ) {
 						
 						res.add(children[j].entries.get(i));
 						if(!res2.contains(children[j]))
@@ -196,8 +209,8 @@ public class Node implements Serializable {
 					}
 				}
 			}
-		}
-		
+		}}
+//		System.out.println(res + "-------");
 		 m[0] = (List<Object>) (List<?>) res;
 		 m[1] = (List<Object>) (List<?>) res2;
 	
@@ -209,6 +222,7 @@ public class Node implements Serializable {
     	List<Object> [] result = search(x,y,z,x1,y1,z1);
     	List<List<Record>> recs = (List<List<Record>>) (List<?>) result[0];
     	List<Node> node = (List<Node>) (List<?>) result[1];
+    	System.out.println(recs);
     	
     	for(int i = 0; i<recs.size(); i++) {
     		for(int j=0; j<recs.get(i).size(); j++){
@@ -221,22 +235,32 @@ public class Node implements Serializable {
     				for(int n=0; n<node.get(k).entries.size(); n++) {
     					node.get(k);
     					node.get(k).entries.get(n);
+    					boolean flagDeleted = false;
     					for(int l = 0;l<node.get(k).entries.get(n).size();l++) {
 //    						System.out.println(r);
     						
 //        					System.out.println(2);
 	    					if(node.get(k).entries.get(n).get(l) == r) {
 	    						node.get(k).entries.get(n).remove(l);
+	    						if(node.get(k).entries.get(n).size() ==0) {
+//	        						System.out.println("here_______________________________________________");
+	            					node.get(i).entries.remove(n);
+	            					
+	            					flagDeleted = true;
+	            				}
 	    						insert(r);
+	    						
 	    						break;
 	    					}
     					}
-    					if(node.get(k).entries.get(n).size() ==0) {
+    					if(flagDeleted == true) {n--;break;}
+//    					if(node.get(k).entries.get(n).size() ==0) {
 //    						System.out.println("here_______________________________________________");
-        					node.get(i).entries.remove(n);
-        					n--;
-        					break;
-        				}
+//        					node.get(i).
+//        					entries.remove(n);
+//        					n--;
+//        					break;
+//        				}
     				}
     				
     			}
