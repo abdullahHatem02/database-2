@@ -4,6 +4,8 @@ import java.util.*;
 public class Record implements Serializable {
 	
 	int page;
+	int id;
+	static int Gid;
 	
 	private static final long serialVersionUID = 1L;
 	private Hashtable <String,Object> v;
@@ -11,7 +13,12 @@ public class Record implements Serializable {
 
 	public Record(Hashtable <String,Object> v) {
 		this.v = v;
-		
+		this.id = Gid++;
+	}
+	public Record(Hashtable <String,Object> v,int page) {
+		this.v = v;
+		this.id = Gid++;
+		this.page =page;
 	}
 	public Hashtable <String,Object> getV() {
 		return v;
