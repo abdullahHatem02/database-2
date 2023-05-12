@@ -79,14 +79,17 @@ public class StaticHelpers {
 		        int high = vector.size() - 1; //kam rec fl page
 		        while (low <= high) {
 		            mid = (low + high) / 2;
+		           
 		            Object current = vector.get(mid).getV().get(pkInfo.get(1));
+//		            System.out.println(current);
 		            if  (((Comparable<Object>)current).compareTo(fromTarget) == 0) {
-		            	res.add((Record)current);
+		            	res.add((Record)vector.get(mid));
+//		            	 System.out.println(res +"yy");
 		            	if(exact) 
 		            		return res;
 		            	Object curr = vector.get(++mid).getV().get(pkInfo.get(1));
 		            	while(((Comparable<Object>)curr).compareTo(tillTarget)!=0) {
-		            		res.add((Record)curr);
+		            		res.add((Record)vector.get(mid));
 		            		mid++;
 		            	}
 		            	in.close();
@@ -106,8 +109,10 @@ public class StaticHelpers {
 		        }
 		        pageIn = null;
 		        System.gc();
-		        }        	
+		        }
+	       
 				return res;
+				
 	        }
 			catch(Exception e) {
 							e.printStackTrace();
@@ -115,7 +120,7 @@ public class StaticHelpers {
 			}
 		}
 	//minn w maxx mn arrayList pkInfo (2)(3)
-	public static ArrayList <Object> decipher (SQLTerm term, String minn, String maxx){
+	public static ArrayList <Object> decipher (SQLTerm term, String minn, String maxx,String type){
 		//3ayzeen el hash bta3 el min w el max 
 		String colName= term._strColumnName;
 		String operation= term._strOperator; 
@@ -124,8 +129,9 @@ public class StaticHelpers {
 		Object min = null;
 		Object max = null;
 		try {
-			min = DBApp.parsePrimaryKey(colName, minn);
-			max = DBApp.parsePrimaryKey(colName, maxx);
+			System.out.println(minn);
+			min = DBApp.parsePrimaryKey(type, minn);
+			max = DBApp.parsePrimaryKey(type, maxx);
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

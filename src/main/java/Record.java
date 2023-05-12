@@ -15,9 +15,9 @@ public class Record implements Serializable {
 		this.v = v;
 		this.id = Gid++;
 	}
-	public Record(Hashtable <String,Object> v,int page) {
+	public Record(Hashtable <String,Object> v,int page,int id) {
 		this.v = v;
-		this.id = Gid++;
+		this.id = id;
 		this.page =page;
 	}
 	public Hashtable <String,Object> getV() {

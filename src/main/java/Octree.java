@@ -9,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Vector;
 
 public class Octree implements Serializable {
 	/**
@@ -24,6 +25,7 @@ public class Octree implements Serializable {
 //		System.out.println(boundsY[2] +"YYY");
 		this.name = name;
 		this.tableName = tableName;
+		
 	}
 	
 	public void insert(Record r) throws DBAppException {
@@ -31,7 +33,7 @@ public class Octree implements Serializable {
 		
 		root.insert(r);
 		serialiazeOctree();
-		Node.deserialized = null;
+//		Node.deserialized = new Hashtable<String, Vector < Record>>();;
 		System.gc();
 	}
 		
@@ -40,21 +42,21 @@ public class Octree implements Serializable {
 		root.update(x, y, z, x1, y1, z1, hash);
 //		root.print(0);
 		serialiazeOctree();
-		Node.deserialized = null;
+		Node.deserialized = new Hashtable<String, Vector < Record>>();;
 		System.gc();
 	}
 	
 	public void delete(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1, Hashtable <String, Object> hash) throws DBAppException {
 		root.delete(x, y, z, x1, y1, z1,hash);
 		serialiazeOctree();
-		Node.deserialized = null;
+//		Node.deserialized = new Hashtable<String, Vector < Record>>();;
 		System.gc();
 	}
 
 	public List<Object>[] search(Object x, Object y, Object z, boolean x1, boolean y1, boolean z1) throws DBAppException {
 		List<Object>[] res = root.search(x, y, z, x1, y1, z1);
 		serialiazeOctree();
-		Node.deserialized = null;
+//		Node.deserialized = new Hashtable<String, Vector < Record>>();;
 		System.gc();
 		return res;
 	}

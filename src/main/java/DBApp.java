@@ -133,7 +133,7 @@ public class DBApp {
 			if(table.getPages().size()==0){
 				Vector <Record> newPage = new Vector <Record>();
 				table.getPages().add(1);
-				newRecord = new Record(htblColNameValue,1);
+				newRecord = new Record(htblColNameValue,1,table.getRows()+1);
 				newPage.add(newRecord);
 				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName +  "1.ser"));
 				outputStream.writeObject(newPage);
@@ -142,7 +142,7 @@ public class DBApp {
 			}
 			else {
 				Vector <Record> currentPage = deserializePage(table, index[1]);
-				newRecord = new Record(htblColNameValue,index[1]);
+				newRecord = new Record(htblColNameValue,index[1],table.getRows()+1);
 				currentPage.add(index[2],newRecord);
 				int i =1;
 				if(currentPage.size() > maxRowPerPage) {
@@ -231,12 +231,13 @@ public class DBApp {
 			Vector <Record> currentPage = deserializePage(table, index[1]);
 			Record oldValue = currentPage.remove(index[0]); //worst case
 			Set <String> oldie = oldValue.getV().keySet();
-			Record newie = new Record(htblColNameValue,oldValue.page);
+			Record newie = new Record(htblColNameValue,oldValue.page,table.getRows()+1);
+			table.setRows(table.getRows()+1);
 			for(String s : oldie) {
 				if(newie.getV().get(s)==null)
 					newie.getV().put(s, oldValue.getV().get(s));
 			}
-			currentPage.add(index[0],new Record(htblColNameValue,oldValue.page));
+			currentPage.add(index[0],new Record(htblColNameValue,oldValue.page,table.getRows()+1));
 			ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + index[1] + ".ser"));
 			outputStream.writeObject(currentPage);
 			outputStream.close();	
@@ -384,6 +385,8 @@ public class DBApp {
 				if(!cols.contains(arrSQLTerms[i]._strColumnName) && !s.equals(colIndexes.get(arrSQLTerms[i]._strColumnName))) {
 					useIndex = false;break;}
 		}
+		else
+			useIndex = false;
 		if(useIndex == true) {
 			Octree oct = Octree.deserialiazeOctree(s);
 			ArrayList <String> x = StaticHelpers.getMaxMinVals(strTableName, (String) oct.root.boundsX[0]);
@@ -400,9 +403,9 @@ public class DBApp {
 				if(oct.root.boundsX[0].equals(arrSQLTerms[k]._strColumnName))
 					break;
 				
-			ArrayList <Object> x2 = StaticHelpers.decipher(arrSQLTerms[i], x.get(0),x.get(1));
-			ArrayList <Object> y2 = StaticHelpers.decipher(arrSQLTerms[j], y.get(0), y.get(1));
-			ArrayList <Object> z2 = StaticHelpers.decipher(arrSQLTerms[k], z.get(0),z.get(1));
+			ArrayList <Object> x2 = StaticHelpers.decipher(arrSQLTerms[i], x.get(0),x.get(1),"None");
+			ArrayList <Object> y2 = StaticHelpers.decipher(arrSQLTerms[j], y.get(0), y.get(1),"None");
+			ArrayList <Object> z2 = StaticHelpers.decipher(arrSQLTerms[k], z.get(0),z.get(1),"None");
 			
 			List <Record> flattened = oct.root.search2(x2.get(2),y2.get(2),z2.get(2),x2.get(2),y2.get(2),z2.get(2)).stream()
                     .flatMap(List::stream)
@@ -417,14 +420,19 @@ public class DBApp {
 		for(int k=0;k<arrSQLTerms.length;k++) {
    		 SQLTerm current= arrSQLTerms[k];
    		 tempResult = new  Vector<Record>();
-   		 if(arrSQLTerms[k]._strColumnName.equals(pkInfo.get(0))) {
-   		 ArrayList<Object> decipher = StaticHelpers.decipher(arrSQLTerms[k],pkInfo.get(2), pkInfo.get(3));
-   		 if((boolean)decipher.get(0))
+//   		System.out.println(arrSQLTerms[k]._strColumnName);
+//   		System.out.println(pkInfo.get(0));
+   		 if(arrSQLTerms[k]._strColumnName.equals(pkInfo.get(1))) {
+   			 
+   		 ArrayList<Object> decipher = StaticHelpers.decipher(arrSQLTerms[k],pkInfo.get(2), pkInfo.get(3),pkInfo.get(0));
+   		 if((boolean)decipher.get(0)) {
+   			 
    			 tempResult = StaticHelpers.binarySearchPK(decipher.get(2), decipher.get(3), (boolean)decipher.get(1), pkInfo, current._strTableName);
-   			 break;
+   			 break;}
    		 }
    	 }
 		if(tempResult == null) {
+			
 		for(int i0 = 0;i0<table.getPages().size();i0++) {
 			Vector <Record> v = deserializePage(table, i0 +1);
 			result = StaticHelpers.linearSelect(v, arrSQLTerms, strarrOperators);
@@ -766,21 +774,23 @@ public class DBApp {
 		DBApp x = new DBApp();
 		x.init();
 		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> ( ); 
-////	    htblColNameValue.put("id","43-0276"); 
-	    htblColNameValue.put("gpa", new Double(3.8)); 
+	    htblColNameValue.put("id","46-2834"); 
+//	    htblColNameValue.put("gpa", new Double(2.0)); 
 ////	    htblColNameValue.put("dob", formattedDate);
-	    htblColNameValue.put("first_name", "abdule");
+//	    htblColNameValue.put("first_name", "zbdull");
+//	    x.insertIntoTable("students", htblColNameValue);
+//	    x.deleteFromTable("students", htblColNameValue);
 //	    System.out.println(htblColNameValue);
-        x.updateTable("students", "43-0276", htblColNameValue);
+//        x.updateTable("students", "43-0276", htblColNameValue);
 //        x.createIndex("students", new String []{"id","first_name","gpa"});
         
 	   
 //	    x.insertIntoTable("students", htblColNameValue);
 
 //		x.createIndex("students", new String []{"gpa","dob","first_name"});
-//		SQLTerm[] arrSQLTerms;
-//		arrSQLTerms = new SQLTerm[3];
-//		arrSQLTerms[0] = new SQLTerm();
+		SQLTerm[] arrSQLTerms;
+		arrSQLTerms = new SQLTerm[1];
+		arrSQLTerms[0] = new SQLTerm();
 //		arrSQLTerms[1] = new SQLTerm();
 //		arrSQLTerms[2] = new SQLTerm();
 //		arrSQLTerms[2]._strTableName = "students";
@@ -791,18 +801,18 @@ public class DBApp {
 //		arrSQLTerms[1]._strColumnName= "gpa";
 //		arrSQLTerms[1]._strOperator = "=";
 //		arrSQLTerms[1]._objValue = new Double( 1.5 );
-//		arrSQLTerms[0]._strTableName = "students";
-//		arrSQLTerms[0]._strColumnName= "gpa";
-//		arrSQLTerms[0]._strOperator = "=";
-//		arrSQLTerms[0]._objValue = new Double( 1.69 );
-//		String[]strarrOperators = new String[2];
+		arrSQLTerms[0]._strTableName = "students";
+		arrSQLTerms[0]._strColumnName= "id";
+		arrSQLTerms[0]._strOperator = ">";
+		arrSQLTerms[0]._objValue = "43-0276";
+		String[]strarrOperators = new String[0];
 //		strarrOperators[0] = "AND";
 //		strarrOperators[1] = "AND";
 ////		 select * from Student where name = “John Noor” or gpa = 1.5;
-//		Iterator resultSet = x.selectFromTable(arrSQLTerms , strarrOperators);
-//		while(resultSet.hasNext()) {
-//			System.out.println(resultSet.next());
-//		}
+		Iterator resultSet = x.selectFromTable(arrSQLTerms , strarrOperators);
+		while(resultSet.hasNext()) {
+			System.out.println(resultSet.next());
+		}
 //	    Octree o = Octree.deserialiazeOctree("idfirst_namegpa");
 //	    o.update("43-0276", "43-0276", "43-0276", true, false, false, htblColNameValue);
 		try {
@@ -818,7 +828,7 @@ public class DBApp {
 	        
 //	        o.root.print(0);
 //	        o.search();
-			Octree y = Octree.deserialiazeOctree("idfirst_namegpa");
+//			Octree y = Octree.deserialiazeOctree("idfirst_namegpa");
 //			y.root.print(0);
 //			System.out.println(v.size());
 //			Vector <Record>  v2 = x.deserializePage(b, 2);

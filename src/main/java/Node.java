@@ -40,7 +40,7 @@ public class Node implements Serializable {
 
     public void insert(Record r) throws DBAppException {
     	if(this.children== null) {
-    		
+    		this.entries = new Vector<Vector<Record>>();
     		this.deserializeNodeEntries();
     		Hashtable <String,Object> x = r.getV();
     		boolean flagDuplicate = false;
@@ -270,7 +270,7 @@ public class Node implements Serializable {
 			outputStream.writeObject(deserialized.get(s));
 			outputStream.close();
 			}
-		
+		deserialized = new Hashtable<String, Vector<Record>>();
 		}
 		catch(Exception e) {
 			throw new DBAppException();
@@ -284,7 +284,9 @@ public class Node implements Serializable {
     	List<Node> node = (List<Node>) (List<?>) result[1];
     	
     	for(int i = 0; i<recs.size(); i++) {
+    		
     		for(int j=0; j<recs.get(i).size(); j++){
+    			
     			Record r = recs.get(i).get(j);
     			Set<String> set = hash.keySet();
     			//boolean remove = false; //remove mn el LIST el han-remove mnhaa (f e3kesy e l logic) ~Youstina
@@ -294,29 +296,34 @@ public class Node implements Serializable {
     						 break;
     				}
     			}
+    			
     			for(int k=0; k<node.size(); k++) {
     				for(int n=0; n<node.get(k).entries.size(); n++) {
     					node.get(k);
     					node.get(k).entries.get(n);
     					for(int l = 0;l<node.get(k).entries.get(n).size();l++) {
 	    					if(node.get(k).entries.get(n).get(l) == r) {
+	    						
+	    			    		deserialized.get(tableName+r.page+"").remove(r);
 	    						node.get(k).entries.get(n).remove(l);
 	    						node.get(k).entriesIdPage.get(n).remove(l);
+	    						System.out.println(recs);
 	    						l--;
+	    						
 	    					}
     					}
     					if(node.get(k).entries.get(n).size() ==0) {
+    						System.out.println(recs);
         					node.get(i).entries.remove(n);
         					node.get(i).entriesIdPage.remove(n);
         					n--;
+        					System.out.println(recs);
         				}
     				}	
     			}
+    			
     		}
     	}
-    	for(int i = 0;i<recs.size();i++) 
-    		for(int j = 0;j<recs.get(i).size();j++) 
-    			deserialized.get(""+recs.get(i).get(j).page).remove(recs.get(i).get(j));
     	serializePage();	
     	return recs; //3shan ne3mlhom remove ml table b2aa
     }
@@ -358,6 +365,7 @@ public class Node implements Serializable {
     		}
     	}
     	try {
+    		
     	for(int i: pages) {
     		Vector <Record> page;
     		if(deserialized.get(tableName + i) == null) {
@@ -386,6 +394,7 @@ public class Node implements Serializable {
 			System.gc();
     	}
     	
+    	
     	}
     	catch(Exception e) {
     		e.printStackTrace();
@@ -402,7 +411,7 @@ public class Node implements Serializable {
                 ( compareObjects(minY, children[j].boundsY[2]) < 0 && compareObjects(maxY, children[j].boundsY[1]) >= 0 ) &&
                 ( compareObjects(minZ, children[j].boundsZ[2]) < 0 && compareObjects(maxZ, children[j].boundsZ[1]) >= 0 )) {
                 if(children[j].children != null) {
-                    res.addAll((ArrayList) children[j].search(minX, maxX, minY, maxY, minZ, maxZ));
+                    res.addAll((ArrayList) children[j].search2(minX, maxX, minY, maxY, minZ, maxZ));
                 }
                 else {
                     if(children[j].entriesIdPage != null && children[j].entries == null) {
