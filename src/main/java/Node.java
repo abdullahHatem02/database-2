@@ -26,12 +26,12 @@ public class Node implements Serializable {
     
     private final int maxEntries;
     
-    public Node(Object[] boundsX, Object[] boundsY, Object[] boundsZ, int maxEntries,String tableName) {
+    public Node(Object[] boundsX, Object[] boundsY, Object[] boundsZ, int maxEntries,String tableName) {//remove extra param
 		super();
 		this.boundsX = boundsX;
 		this.boundsY = boundsY;
 		this.boundsZ = boundsZ;
-		this.maxEntries = maxEntries;
+		this.maxEntries = DBApp.maxEntriesInNode;
 		entries = new Vector <Vector <Record>>();
 		entriesIdPage = new Vector <Vector <Point>>();
 		this.children = null;

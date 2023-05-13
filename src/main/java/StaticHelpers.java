@@ -69,39 +69,66 @@ public class StaticHelpers {
 			if(table.getPages().size()==0) 
 				return res;
 			int low = 0;
-	        int i = 0;
+	        int j = 0;
 	        int mid = 0;
-	        for(i =0; i<table.getPages().size();i++) {
-	             ObjectInputStream pageIn = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + tableName + table.getPages().get(i) + ".ser"));
+	        System.out.println(fromTarget+" "+ tillTarget+" "+exact +"\n"+pkInfo);
+	        for(j =0; j<table.getPages().size();j++) {
+	             ObjectInputStream pageIn = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + tableName + table.getPages().get(j) + ".ser"));
 	             Vector <Record> vector = (Vector <Record>) pageIn.readObject();
 	             low = 0;
 	             mid = 0;
 		        int high = vector.size() - 1; //kam rec fl page
 		        while (low <= high) {
 		            mid = (low + high) / 2;
-		           
 		            Object current = vector.get(mid).getV().get(pkInfo.get(1));
-//		            System.out.println(current);
-		            if  (((Comparable<Object>)current).compareTo(fromTarget) == 0) {
-		            	res.add((Record)vector.get(mid));
-//		            	 System.out.println(res +"yy");
-		            	if(exact) 
-		            		return res;
-		            	Object curr = vector.get(++mid).getV().get(pkInfo.get(1));
-		            	while(((Comparable<Object>)curr).compareTo(tillTarget)!=0) {
-		            		res.add((Record)vector.get(mid));
-		            		mid++;
-		            	}
-		            	in.close();
-		            	pageIn.close();
-		                return res;
-		            }else if (((Comparable<Object>)current).compareTo(fromTarget) < 0) {
+		            if (((Comparable<Object>)current).compareTo(fromTarget) >= 0) {
+		                // The current element is greater than or equal to fromTarget
+		                res.add((Record)vector.get(mid));
+		                // Check for more elements greater than or equal to fromTarget to the left of mid
+		                int i = mid - 1;
+		                while (i >= 0 && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(fromTarget) >= 0) {
+		                    res.add((Record)vector.get(i));
+		                    i--;
+		                }
+		                // Check for more elements less than or equal to tillTarget to the right of mid
+		                i = mid + 1;
+		                while (i < vector.size() && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(tillTarget) <= 0) {
+		                    res.add((Record)vector.get(i));
+		                    i++;
+		                }
+		                // Move on to the next search
+		                if (exact) {
+		                    return res;
+		                }
+		                low = high + 1; // Exit the while loop
+		            } else if (((Comparable<Object>)current).compareTo(tillTarget) <= 0) {
+		                // The current element is less than or equal to tillTarget
+		                res.add((Record)vector.get(mid));
+		                // Check for more elements less than or equal to tillTarget to the right of mid
+		                int i = mid + 1;
+		                while (i < vector.size() && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(tillTarget) <= 0) {
+		                    res.add((Record)vector.get(i));
+		                    i++;
+		                }
+		                // Check for more elements greater than or equal to fromTarget to the left of mid
+		                i = mid - 1;
+		                while (i >= 0 && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(fromTarget) >= 0) {
+		                    res.add((Record)vector.get(i));
+		                    i--;
+		                }
+		                // Move on to the next search
+		                if (exact) {
+		                    return res;
+		                }
+		                low = high + 1; // Exit the while loop
+		            } else if (((Comparable<Object>)current).compareTo(fromTarget) < 0) {
+		                // The current element is less than fromTarget, so search the right half of the array
 		                low = mid + 1;
-		            } 
-		            else {
+		            } else {
+		                // The current element is greater than tillTarget, so search the left half of the array
 		                high = mid - 1;
-		            	}
-		        	}
+		            }
+		        }
 		        pageIn.close();
 		        if((((Comparable<Object>)vector.lastElement().getV().get(pkInfo.get(1))).compareTo(fromTarget) > 0)) {
 		        	flag = true;
@@ -243,6 +270,8 @@ public class StaticHelpers {
 		}
 	}
 	
+	//getDataTypes
+	
 	public static Vector <Record> linearSelect(Vector <Record> v, SQLTerm [] arrSQLTerms,String [] strarrOperators  ) throws DBAppException {
 		Vector <Record> result = new Vector <Record>();
 		 for (int i = 0; i < v.size(); i++) {
@@ -289,5 +318,26 @@ public class StaticHelpers {
     }
 		 return result;
 		}
-
+	
+public static Hashtable <String,String> getDataTypes(String strTableName) throws DBAppException {
+		
+		try {
+			FileReader fr = new FileReader("src/main/resources/metadata.csv");
+			BufferedReader br = new BufferedReader(fr);
+			Hashtable <String,String> res = new Hashtable <String,String>(); 
+			String s = br.readLine();
+			while(s != null) {
+				System.out.println(strTableName);
+				if(s.split(",")[0].equals(strTableName)) {
+					
+					res.put(s.split(",")[1],s.split(",")[2]);	
+				}
+				s = br.readLine();	
+			}
+			br.close();
+			return res;	
+		} catch (Exception e) {
+			throw new DBAppException(e.getMessage());
+		}
+	}
 }
