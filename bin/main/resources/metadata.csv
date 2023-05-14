@@ -13,3 +13,7 @@ transcripts,course_name,java.lang.String,False,null,null,AAAAAA,zzzzzz
 transcripts,student_id,java.lang.String,False,null,null,43-0000,99-9999
 pcs,pc_id,java.lang.Integer,True,null,null,0,20000
 pcs,student_id,java.lang.String,False,null,null,43-0000,99-9999
+MERWIZ,ID,java.lang.Integer,True,null,null,1,9,
+MERWIZ,NAME,java.lang.String,False,null,null,A,Z,
+HASSAN,ID,java.lang.Integer,True,null,null,1,9,
+HASSAN,NAME,java.lang.String,False,null,null,A,Z,

@@ -799,12 +799,77 @@ public class DBApp {
 	    switch(command){
 	    case "CREATE": if(tokens[1].equals("TABLE")) {createTableParser(tokens);}else{createIndexParser(tokens);};break;
 	    case "SELECT": selectParser(tokens);break;
+	    case "INSERT": insertParser(tokens);break;
 	    }
 	     return null;
 	}
-	public void selectParser(String[] tokens0) {
+	public void selectParser(String[] tokens) {
 		
 	}
+	public void insertParser(String[] tokens) {
+		String strTableName = tokens[2];
+		Hashtable<String,Object> htblColNameValue = new Hashtable<String,Object>();
+		Hashtable<String,String> dataTypes = new Hashtable<String,String>();
+		try {
+			dataTypes = StaticHelpers.getDataTypes(strTableName);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		String val = "";
+		boolean valuesCheck = false;
+		ArrayList<String> colNames = new ArrayList<String>();
+		ArrayList<String> values = new ArrayList<String>();
+		ArrayList<Object> valuesObj = new ArrayList<Object>();
+		for(int i = 3; i < tokens.length; i++) {
+			if(tokens[i].equals("VALUES")) {
+				valuesCheck = true;
+				continue;
+			}
+			if(valuesCheck) {
+				values.add(tokens[i]);
+				System.out.println(tokens[i] + " values");
+			}
+			else {
+				colNames.add(tokens[i]);
+				System.out.println(tokens[i] + " colNames");
+			}
+		
+		}
+		for(int j = 0; j < colNames.size(); j++) {
+			System.out.println(colNames.get(j) + "-----------");
+			val = dataTypes.get(colNames.get(j));
+			switch(val){
+			case "java.lang.Integer": valuesObj.add(Integer.parseInt(values.get(j)));continue;
+			case "java.lang.String": valuesObj.add(values.get(j));continue;	
+			case "java.lang.Double": valuesObj.add(Float.parseFloat(values.get(j)));continue;
+			case "java.lang.Date": SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			try {
+				valuesObj.add(dateFormat.parse(values.get(j)));
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}continue;
+			}
+		}
+			for(int k = 0; k < colNames.size(); k++) {
+				
+				htblColNameValue.put(colNames.get(k), valuesObj.get(k));
+				System.out.println("colNames: "+ colNames.get(k) + " values:"+ valuesObj.get(k));
+			}
+			
+			System.out.println("Value of A: " + val);
+		
+		try {
+			insertIntoTable(strTableName, htblColNameValue);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	       		
+	
+	
 	public void createTableParser(String[] tokens) throws DBAppException {
 		Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
 		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
@@ -861,10 +926,10 @@ public class DBApp {
 		DBApp x = new DBApp();
 		x.init();
 //		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> (); 
-		StringBuffer hassan = new StringBuffer("create table merwiz (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), PRIMARY KEY (id))");	
+		StringBuffer create = new StringBuffer("create table Hassan (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), PRIMARY KEY (id))");	
 		StringBuffer select = new StringBuffer("select * from hazzmarazz where id < 5");
-		StringBuffer insert = new StringBuffer("insert into hazzmarazzzz (id, name) values (1, boody)");
-		x.parseSQL(hassan);
+		StringBuffer insert = new StringBuffer("insert into Hassan (id, name) values (2, test2)");
+		x.parseSQL(insert);
 //		StringBuffer sqlStatement = new StringBuffer();
 //		sqlStatement.append("INSERT INTO students (id, name, dob, gpa) ");
 //		sqlStatement.append("VALUES (1, 'John Smith', '2002-01-01', 3.75)");
