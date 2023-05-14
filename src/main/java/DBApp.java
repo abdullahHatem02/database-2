@@ -46,7 +46,7 @@ public class DBApp {
 							Hashtable<String,String> htblColNameMax) throws DBAppException 
 	{
 		//Checks
-		if(checkIfTableExists(strTableName) == true || checkDataTypeAndKey(strClusteringKeyColumn, htblColNameType) == false)
+		if(checkIfTableExists(strTableName) == true  || checkDataTypeAndKey(strClusteringKeyColumn, htblColNameType) == false)
 			throw new DBAppException("Table exists or wrong data types");
 		//Write in metadata file
 		Set<String> keys1 = htblColNameMax.keySet();
@@ -538,7 +538,6 @@ public class DBApp {
 			throw new DBAppException(e.getMessage());
 		}
 		
-		
 	}
 
 	public void checkNull(Record r) throws DBAppException {
@@ -809,10 +808,11 @@ public class DBApp {
 		DBApp x = new DBApp();
 		x.init();
 //		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> (); 
-		StringBuffer create = new StringBuffer("create table Hassan (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), PRIMARY KEY (id))");	
+		StringBuffer create = new StringBuffer("create table abcd (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), dob Date check (dob > 1901-01-01 AND dob < 2020-12-31), PRIMARY KEY (id))");	
 		StringBuffer select = new StringBuffer("select * from hazzmarazz where id < 5");
 		StringBuffer insert = new StringBuffer("insert into Hassan (id, name) values (2, test2)");
-		x.parseSQL(insert);
+		StringBuffer index = new StringBuffer("CREATE INDEX test ON abcd (id, dob, name)");
+		x.parseSQL(index);
 //		StringBuffer sqlStatement = new StringBuffer();
 //		sqlStatement.append("INSERT INTO students (id, name, dob, gpa) ");
 //		sqlStatement.append("VALUES (1, 'John Smith', '2002-01-01', 3.75)");

@@ -9,6 +9,8 @@ public class BonusHelpers {
 	public static void selectParser(String[] tokens,DBApp x) {
 		
 	}
+	
+	
 	public static void insertParser(String[] tokens, DBApp x) {
 		String strTableName = tokens[2];
 		Hashtable<String,Object> htblColNameValue = new Hashtable<String,Object>();
@@ -92,6 +94,7 @@ public class BonusHelpers {
 			else {
 				colName = tokens[i];
 				colType = typeGetter(tokens[i+1]);
+				System.out.println("COL NAME: " + colName + " COL Type: " + colType);
 				htblColNameType.put(colName, colType);
 				
 				if(i+5 < tokens.length) {
@@ -118,11 +121,28 @@ public class BonusHelpers {
 			return "java.lang.String";
 		if(type.contains("INT"))
 			return "java.lang.Integer";
-		else 
+		if(type.contains("DECIMAL")) 
 			return "java.lang.Double";	
+		else
+			return "java.lang.Date";	
 	}
 	
 	public static void createIndexParser(String[] tokens, DBApp x) {
-		
+		String strTableName = tokens[4];
+		String[] strarrColName;
+		ArrayList<String> temp = new ArrayList<String>();
+		for(int i = 5; i < tokens.length; i++) {
+			temp.add(tokens[i]);
+		}
+		strarrColName = new String[temp.size()];
+		for(int j = 0; j < temp.size(); j++) {
+			strarrColName[j] = temp.get(j);
+		}
+		try {
+			x.createIndex(strTableName, strarrColName);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
