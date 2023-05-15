@@ -262,6 +262,7 @@ public class DBApp {
 						e.printStackTrace(); //StackTrace();
 			throw new DBAppException(e.getMessage());
 		}
+		System.out.println("Done");
 		//5 worst case scenario  
 	}
 			
@@ -768,6 +769,7 @@ public class DBApp {
 		 throw new DBAppException("bs");
 		}
 	}
+	
 
 	private void serializeTable (Table table) throws FileNotFoundException, IOException {
 		 ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + table.getTableName() +".ser"));
@@ -805,6 +807,7 @@ public class DBApp {
 	    case "SELECT": BonusHelpers.selectParser(tokens,this);break;
 	    case "INSERT": BonusHelpers.insertParser(tokens,this);break;
 	    case "DELETE": BonusHelpers.deleteParser(tokens,this);break;
+	    case "UPDATE": BonusHelpers.updateParser(tokens,this);break;
 	    }
 	     return null;
 	}
@@ -815,11 +818,12 @@ public class DBApp {
 		x.init();
 		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> (); 
 		StringBuffer create = new StringBuffer("create table hijk (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), count int check (count > 0 AND count < 9999), PRIMARY KEY (id))");	
-		StringBuffer select = new StringBuffer("select * from hazzmarazz where id < 5");
-		StringBuffer insert = new StringBuffer("insert into hijk (id, name, count) values (2, 'Hassan', 6)");
+		StringBuffer select = new StringBuffer("select * from hijk where id < 8 AND name = 'Hassan'");
+		StringBuffer insert = new StringBuffer("insert into hijk (id, name, count) values (9, 'Hassan', 5)");
 		StringBuffer index = new StringBuffer("CREATE INDEX hijk ON abcd (id, dob, name)");
 		StringBuffer delete = new StringBuffer("DELETE FROM hijk WHERE id = 1 name = 'Hassan' AND count = 5");
-		x.parseSQL(delete);
+		StringBuffer update = new StringBuffer("UPDATE hijk SET name = 'Hassouna', count = 5 WHERE id = 9");
+		x.parseSQL(update);
 //		StringBuffer sqlStatement = new StringBuffer();
 //		sqlStatement.append("INSERT INTO students (id, name, dob, gpa) ");
 //		sqlStatement.append("VALUES (1, 'John Smith', '2002-01-01', 3.75)");

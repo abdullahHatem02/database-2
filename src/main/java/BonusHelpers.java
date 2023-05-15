@@ -6,9 +6,46 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 
 public class BonusHelpers {
-	public static void selectParser(String[] tokens,DBApp x) {
+	public static void selectParser(String[] tokens, DBApp dbApp) {
 		
-	}
+		String tblName = tokens[3];
+		String[] strarrOperators;
+		strarrOperators = new String[tokens.length];
+		SQLTerm[] arr;
+		arr = new SQLTerm[tokens.length];
+		int j = 0;
+		int o = 0;
+		for(int i = 5; i< tokens.length;i++) {
+			arr[j] = new SQLTerm();
+			arr[j]._strTableName = tblName;
+			arr[j]._strColumnName = tokens[i];
+			if(i+1 < tokens.length)
+				arr[j]._strOperator = tokens[i+1];
+			if(i+3 < tokens.length)
+				arr[j]._objValue = tokens[i+3];
+			System.out.println("------------" + arr[j]._strTableName + " "+  arr[j]._strColumnName + " " + arr[j]._strOperator + " " + arr[j]._objValue + "-----------------");
+			j++;
+			
+			if(i+1<tokens.length) {
+				strarrOperators[o] = tokens[i+1];
+				i++;
+				o++;
+			}
+			if(i+3 < tokens.length)
+				i=i+3;
+			
+			
+		}
+		System.out.println(strarrOperators[0] + "----------");
+		System.out.println(strarrOperators[1] + "----------");
+		try {
+			dbApp.selectFromTable(arr, strarrOperators);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+			
+		}
 	
 	
 	public static void insertParser(String[] tokens, DBApp x) {
@@ -215,6 +252,87 @@ public class BonusHelpers {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		}			
+		}
+
+
+	public static void updateParser(String[] tokens, DBApp dbApp) {
+		String strTableName = tokens[1];
+		Hashtable<String,Object> htblColNameValue = new Hashtable<String,Object>();
+		ArrayList<String> colNames = new ArrayList<String>();
+		ArrayList<String> values = new ArrayList<String>();
+		ArrayList<Object> valuesObj = new ArrayList<Object>();
+		Hashtable<String,String> dataTypes = new Hashtable<String,String>();
+		String val = "";
+		String clustering = "";
+		boolean whereCheck = false;
+		int cols = 3;
+		int vals = 5;
+		boolean equalCheck = false;
+		try {
+			dataTypes = StaticHelpers.getDataTypes(strTableName);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		for(int i = 0; i <= tokens.length; i++) {
+			if(tokens[i].equalsIgnoreCase("where")) {
+				whereCheck = true;
+				continue;
+			}
+	
+			if(!whereCheck) {
+				if(i == cols) {
+					colNames.add(tokens[i]);
+					cols += 3;
+				}
+				if(i == vals) {
+					values.add(tokens[i]);
+					vals += 3;
+				}
+			}
+			else {
+				
+				if(tokens[i].equals("=")) {
+					clustering = tokens[i+1];
+					System.out.println("clustering: " + clustering);
+					break;
+				}
+				
+			}
+		
+		}
+		System.out.println(colNames.size());
+		for(int k = 0; k < colNames.size(); k++) {
+//			System.out.println(colNames.get(j) + "-----------");
+			System.out.println(colNames.get(k) + "-----------------");
+			System.out.println(dataTypes.get(colNames.get(k)));
+			val = dataTypes.get(colNames.get(k));
+//			System.out.println(val);
+			switch(val){
+			case "java.lang.Integer": valuesObj.add(Integer.parseInt(values.get(k)));continue;
+			case "java.lang.String": valuesObj.add(values.get(k));continue;	
+			case "java.lang.Double": valuesObj.add(Float.parseFloat(values.get(k)));continue;
+			case "java.lang.Date": SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			try {
+				valuesObj.add(dateFormat.parse(values.get(k)));
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}continue;
+			}
+		}
+		for(int k = 0; k < colNames.size(); k++) {
+			
+			htblColNameValue.put(colNames.get(k), valuesObj.get(k));
+			System.out.println("colNames: "+ colNames.get(k) + " values:"+ valuesObj.get(k));
+		}
+		try {
+			dbApp.updateTable(strTableName, clustering, htblColNameValue);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}			
 	}
 
