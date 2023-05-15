@@ -162,23 +162,7 @@ public class BonusHelpers {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		for(int j = 0; j < colNames.size(); j++) {
-//			System.out.println(colNames.get(j) + "-----------");
-			val = dataTypes.get(colNames.get(j));
-//			System.out.println(val);
-			switch(val){
-			case "java.lang.Integer": valuesObj.add(Integer.parseInt(values.get(j)));continue;
-			case "java.lang.String": valuesObj.add(values.get(j));continue;	
-			case "java.lang.Double": valuesObj.add(Float.parseFloat(values.get(j)));continue;
-			case "java.lang.Date": SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-			try {
-				valuesObj.add(dateFormat.parse(values.get(j)));
-			} catch (ParseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}continue;
-			}
-		}
+		
 		int j = -1;
 		for(int i = 4; i < tokens.length; i++) {
 			j++;
@@ -195,6 +179,25 @@ public class BonusHelpers {
 				j = -1;
 			}
 			}
+		System.out.println(colNames.size());
+		for(int k = 0; k < colNames.size(); k++) {
+//			System.out.println(colNames.get(j) + "-----------");
+			System.out.println(colNames.get(k) + "-----------------");
+			val = dataTypes.get(colNames.get(k));
+//			System.out.println(val);
+			switch(val){
+			case "java.lang.Integer": valuesObj.add(Integer.parseInt(values.get(k)));continue;
+			case "java.lang.String": valuesObj.add(values.get(k));continue;	
+			case "java.lang.Double": valuesObj.add(Float.parseFloat(values.get(k)));continue;
+			case "java.lang.Date": SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			try {
+				valuesObj.add(dateFormat.parse(values.get(k)));
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}continue;
+			}
+		}
 //		System.out.println(values.size());
 		System.out.println(dataTypes.get("ID"));
 		System.out.println(dataTypes.get("NAME"));

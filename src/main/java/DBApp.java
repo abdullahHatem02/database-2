@@ -818,7 +818,7 @@ public class DBApp {
 		StringBuffer select = new StringBuffer("select * from hazzmarazz where id < 5");
 		StringBuffer insert = new StringBuffer("insert into hijk (id, name, count) values (2, 'Hassan', 6)");
 		StringBuffer index = new StringBuffer("CREATE INDEX hijk ON abcd (id, dob, name)");
-		StringBuffer delete = new StringBuffer("DELETE FROM hijk WHERE id = 2 name = 'Hassan' AND count = 6");
+		StringBuffer delete = new StringBuffer("DELETE FROM hijk WHERE id = 1 name = 'Hassan' AND count = 5");
 		x.parseSQL(delete);
 //		StringBuffer sqlStatement = new StringBuffer();
 //		sqlStatement.append("INSERT INTO students (id, name, dob, gpa) ");
