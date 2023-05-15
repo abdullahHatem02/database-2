@@ -23,3 +23,9 @@ HASSOUNA,NAME,java.lang.String,False,null,null,A,Z
 ABCD,ID,java.lang.Integer,True,IDDOBNAME,Octree,1,9
 ABCD,DOB,java.lang.Date,False,IDDOBNAME,Octree,1901-01-01,2020-12-31
 ABCD,NAME,java.lang.String,False,IDDOBNAME,Octree,A,Z
+EFGH,ID,java.lang.Integer,True,null,null,1,9,
+EFGH,COUNT,java.lang.Integer,False,null,null,0,99999999999,
+EFGH,NAME,java.lang.String,False,null,null,A,Z,
+HIJK,ID,java.lang.Integer,True,null,null,1,9,
+HIJK,COUNT,java.lang.Integer,False,null,null,0,9999,
+HIJK,NAME,java.lang.String,False,null,null,A,Z,

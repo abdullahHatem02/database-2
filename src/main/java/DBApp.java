@@ -368,7 +368,8 @@ public class DBApp {
 		catch(Exception e) {
 			e.printStackTrace();
 			throw new DBAppException(e.getMessage());
-		}		
+		}
+		System.out.println("Done");
 	}
 	
 	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException  {
@@ -785,12 +786,16 @@ public class DBApp {
 	    String sql = strbufSQL.toString().trim();
 	    String[] tokens = sql.split("\\s+");
 	    String command = tokens[0].toUpperCase();
+	    String quotes = "'";
+	    String doubleQuotes = "\"";
 	    for(int i = 1; i < tokens.length; i++) {
 	    	tokens[i] = tokens[i].toUpperCase();
-	    	if(tokens[i].contains(",") || tokens[i].contains("(") || tokens[i].contains(")")) {
+	    	if(tokens[i].contains(",") || tokens[i].contains("(") || tokens[i].contains(")") || tokens[i].contains(quotes) || tokens[i].contains(doubleQuotes)) {
 	    		tokens[i] = tokens[i].replace(",","");
 	    		tokens[i] = tokens[i].replace("(","");
 	    		tokens[i] = tokens[i].replace(")","");
+	    		tokens[i] = tokens[i].replace(quotes,"");
+	    		tokens[i] = tokens[i].replace(doubleQuotes,"");
 	    	}
 	    	System.out.println(tokens[i]);
 	    }
@@ -798,7 +803,8 @@ public class DBApp {
 	    switch(command){
 	    case "CREATE": if(tokens[1].equals("TABLE")) {BonusHelpers.createTableParser(tokens,this);}else{BonusHelpers.createIndexParser(tokens,this);};break;
 	    case "SELECT": BonusHelpers.selectParser(tokens,this);break;
-	    case "INSERT":  BonusHelpers.insertParser(tokens,this);break;
+	    case "INSERT": BonusHelpers.insertParser(tokens,this);break;
+	    case "DELETE": BonusHelpers.deleteParser(tokens,this);break;
 	    }
 	     return null;
 	}
@@ -807,22 +813,23 @@ public class DBApp {
 	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
 		DBApp x = new DBApp();
 		x.init();
-//		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> (); 
-		StringBuffer create = new StringBuffer("create table abcd (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), dob Date check (dob > 1901-01-01 AND dob < 2020-12-31), PRIMARY KEY (id))");	
+		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> (); 
+		StringBuffer create = new StringBuffer("create table hijk (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), count int check (count > 0 AND count < 9999), PRIMARY KEY (id))");	
 		StringBuffer select = new StringBuffer("select * from hazzmarazz where id < 5");
-		StringBuffer insert = new StringBuffer("insert into Hassan (id, name) values (2, test2)");
-		StringBuffer index = new StringBuffer("CREATE INDEX test ON abcd (id, dob, name)");
-		x.parseSQL(index);
+		StringBuffer insert = new StringBuffer("insert into hijk (id, name, count) values (2, 'Hassan', 6)");
+		StringBuffer index = new StringBuffer("CREATE INDEX hijk ON abcd (id, dob, name)");
+		StringBuffer delete = new StringBuffer("DELETE FROM hijk WHERE id = 2 name = 'Hassan' AND count = 6");
+		x.parseSQL(delete);
 //		StringBuffer sqlStatement = new StringBuffer();
 //		sqlStatement.append("INSERT INTO students (id, name, dob, gpa) ");
 //		sqlStatement.append("VALUES (1, 'John Smith', '2002-01-01', 3.75)");
 
 		// Call the parseSQL method to execute the SQL statement
 //		Iterator resultSet = x.parseSQL(sqlStatement);
-//	    htblColNameValue.put("id","46-2834"); 
-//	    htblColNameValue.put("gpa", new Double(2.0)); 
-////	    htblColNameValue.put("dob", formattedDate);
-//	    htblColNameValue.put("first_name", "zbdull");
+//	    htblColNameValue.put("ID", 2); 
+//	    htblColNameValue.put("COUNT", 5);
+//	    htblColNameValue.put("NAME", "Hassan") ; 
+//	    x.insertIntoTable("EFGH", htblColNameValue);
 //	    x.insertIntoTable("students", htblColNameValue);
 //	    x.deleteFromTable("students", htblColNameValue);
 //	    System.out.println(htblColNameValue);

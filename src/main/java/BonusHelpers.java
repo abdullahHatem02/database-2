@@ -42,8 +42,9 @@ public class BonusHelpers {
 		
 		}
 		for(int j = 0; j < colNames.size(); j++) {
-			System.out.println(colNames.get(j) + "-----------");
+//			System.out.println(colNames.get(j) + "-----------");
 			val = dataTypes.get(colNames.get(j));
+//			System.out.println(val);
 			switch(val){
 			case "java.lang.Integer": valuesObj.add(Integer.parseInt(values.get(j)));continue;
 			case "java.lang.String": valuesObj.add(values.get(j));continue;	
@@ -145,4 +146,72 @@ public class BonusHelpers {
 			e.printStackTrace();
 		}
 	}
-}
+//shahd was here ;p
+
+	public static void deleteParser(String[] tokens, DBApp dbApp) {
+		String strTableName = tokens[2];
+		Hashtable<String,Object> htblColNameValue = new Hashtable<String,Object>();
+		ArrayList<String> colNames = new ArrayList<String>();
+		ArrayList<String> values = new ArrayList<String>();
+		ArrayList<Object> valuesObj = new ArrayList<Object>();
+		Hashtable<String,String> dataTypes = new Hashtable<String,String>();
+		String val = "";
+		try {
+			dataTypes = StaticHelpers.getDataTypes(strTableName);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		for(int j = 0; j < colNames.size(); j++) {
+//			System.out.println(colNames.get(j) + "-----------");
+			val = dataTypes.get(colNames.get(j));
+//			System.out.println(val);
+			switch(val){
+			case "java.lang.Integer": valuesObj.add(Integer.parseInt(values.get(j)));continue;
+			case "java.lang.String": valuesObj.add(values.get(j));continue;	
+			case "java.lang.Double": valuesObj.add(Float.parseFloat(values.get(j)));continue;
+			case "java.lang.Date": SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			try {
+				valuesObj.add(dateFormat.parse(values.get(j)));
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}continue;
+			}
+		}
+		int j = -1;
+		for(int i = 4; i < tokens.length; i++) {
+			j++;
+			if(j == 0) {
+				colNames.add(tokens[i]);
+				//System.out.println("col names: " + tokens[i]);
+			}
+			else if(j == 2) {
+				values.add(tokens[i]);
+				//System.out.println("values " + tokens[i]);
+			}
+			else if(tokens[i].equals("AND")) {
+				//System.out.println("test");
+				j = -1;
+			}
+			}
+//		System.out.println(values.size());
+		System.out.println(dataTypes.get("ID"));
+		System.out.println(dataTypes.get("NAME"));
+		System.out.println(colNames.size() + "  " + valuesObj.size());
+		for(int k = 0; k < colNames.size(); k++) {
+			htblColNameValue.put(colNames.get(k), valuesObj.get(k));
+			System.out.println("col names: " + colNames.get(k) + " value: " + valuesObj.get(k));
+		}
+//		System.out.println(htblColNameValue.get("ID"));
+//		System.out.println(htblColNameValue.get("DOB"));
+//		System.out.println(htblColNameValue.get("NAME"));
+		try {
+			dbApp.deleteFromTable(strTableName, htblColNameValue);
+		} catch (DBAppException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		}			
+	}
+
