@@ -21,10 +21,11 @@ public class Octree implements Serializable {
 	String tableName;
 	
 	public Octree(String tableName,String name,Object [] boundsX, Object [] boundsY,Object [] boundsZ) {
-		root = new Node(boundsX, boundsY,boundsZ,16,tableName);
+		root = new Node(boundsX, boundsY,boundsZ,16,tableName,boundsX,boundsY,boundsZ);
 //		System.out.println(boundsY[2] +"YYY");
 		this.name = name;
 		this.tableName = tableName;
+		serialiazeOctree();
 		
 	}
 	

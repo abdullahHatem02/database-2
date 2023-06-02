@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.Vector;
 
 public class StaticHelpers {
-	    public static void editMetadata(String filename, String strTableName, String[] strarrColName, Object x [], Object [] y,Object [] z) throws IOException {
+	    public static void editMetadata(String filename, String strTableName, String[] strarrColName, Object x [], Object [] y,Object [] z) throws IOException, DBAppException {
 	        File inputFile = new File(filename);
 	        File tempFile = new File("temp.csv");
 
@@ -24,9 +24,10 @@ public class StaticHelpers {
 	            String[] columns = line.split(",");
 
 	            // Check if the conditions are met
-				if(columns[0].equals(strTableName) && (columns[1].equals(strarrColName[0]) || columns[1].equals(strarrColName[1]) || columns[1].equals(strarrColName[2])))  {
+				if(columns[0].equalsIgnoreCase(strTableName) && (columns[1].equalsIgnoreCase(strarrColName[0]) || columns[1].equals(strarrColName[1]) || columns[1].equalsIgnoreCase(strarrColName[2])))  {
 						columns[4] = strarrColName[0]+strarrColName[1]+strarrColName[2]; columns[5] = "Octree";
 						i++;
+						System.out.println( String.join(",", columns));
 	            }
 
 	            // Write the updated line to the temp file
@@ -35,12 +36,25 @@ public class StaticHelpers {
 	        }
 
 	        // Close the reader and writer
+	        
 	        reader.close();
 	        writer.close();
+	        
+	        BufferedReader reader2 = new BufferedReader(new FileReader(tempFile));
+	        BufferedWriter writer2 = new BufferedWriter(new FileWriter(inputFile));
 
 	        // Replace the input file with the temp file
-	        inputFile.delete();
-	        tempFile.renameTo(inputFile);
+	        while ((line = reader2.readLine()) != null) {
+	            writer2.write(line);
+//	            System.out.println(inputFile.canWrite());
+	            writer2.newLine();
+	        }
+	        
+	        writer2.close();
+	        reader2.close();
+	        tempFile.delete();
+	       
+	  
 	    }
 	    public static Hashtable <String,String> checkIndex(String tableName) throws IOException {
 	        File inputFile = new File("src/main/resources/metadata.csv");
@@ -51,7 +65,7 @@ public class StaticHelpers {
 	        while ((line = reader.readLine()) != null) {
 	            String[] columns = line.split(",");
 //	            System.out.println(columns);
-	            if( columns[0].equals(tableName) && columns[5].equals("Octree")) {
+	            if( columns[0].equalsIgnoreCase(tableName) && columns[5].equalsIgnoreCase("Octree")) {
 	            	res.put(columns[1], columns[4]);
 	            }
 	        }
@@ -61,6 +75,8 @@ public class StaticHelpers {
 	    }
 	    public static Vector<Record> binarySearchPK(Object fromTarget,Object tillTarget, boolean exact ,ArrayList <String> pkInfo, String tableName) throws DBAppException {
 			Vector<Record> res = new Vector<Record>();
+//			System.out.println(fromTarget);
+//			System.out.println("hena???????");
 			boolean flag = false;
 			try {
 			ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + tableName + ".ser"));
@@ -71,12 +87,13 @@ public class StaticHelpers {
 			int low = 0;
 	        int j = 0;
 	        int mid = 0;
-	        System.out.println(fromTarget+" "+ tillTarget+" "+exact +"\n"+pkInfo);
+//	        System.out.println(fromTarget+" "+ tillTarget+" "+exact +"\n"+pkInfo);
 	        for(j =0; j<table.getPages().size();j++) {
 	             ObjectInputStream pageIn = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + tableName + table.getPages().get(j) + ".ser"));
 	             Vector <Record> vector = (Vector <Record>) pageIn.readObject();
 	             low = 0;
 	             mid = 0;
+//	             System.out.println(j +"---------------------");
 		        int high = vector.size() - 1; //kam rec fl page
 		        while (low <= high) {
 		            mid = (low + high) / 2;
@@ -87,19 +104,26 @@ public class StaticHelpers {
 		                // Check for more elements greater than or equal to fromTarget to the left of mid
 		                int i = mid - 1;
 		                while (i >= 0 && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(fromTarget) >= 0) {
-		                    res.add((Record)vector.get(i));
+		                	if(!exact)
+		                		res.add((Record)vector.get(i));
+		                	else if(((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(fromTarget) == 0)
+		                		res.add((Record)vector.get(i));
 		                    i--;
 		                }
 		                // Check for more elements less than or equal to tillTarget to the right of mid
 		                i = mid + 1;
 		                while (i < vector.size() && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(tillTarget) <= 0) {
-		                    res.add((Record)vector.get(i));
+		                	if(!exact)
+		                		res.add((Record)vector.get(i));
+		                	else if(((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(tillTarget) == 0)
+		                		res.add((Record)vector.get(i));
+		                		
 		                    i++;
 		                }
 		                // Move on to the next search
-		                if (exact) {
-		                    return res;
-		                }
+//		                if (exact) {
+//		                	break;
+//		                }
 		                low = high + 1; // Exit the while loop
 		            } else if (((Comparable<Object>)current).compareTo(tillTarget) <= 0) {
 		                // The current element is less than or equal to tillTarget
@@ -107,19 +131,31 @@ public class StaticHelpers {
 		                // Check for more elements less than or equal to tillTarget to the right of mid
 		                int i = mid + 1;
 		                while (i < vector.size() && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(tillTarget) <= 0) {
-		                    res.add((Record)vector.get(i));
-		                    i++;
+//		                	System.out.println(((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))));
+		                	if(!exact)
+		                		res.add((Record)vector.get(i));
+		                	else if(((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(tillTarget) == 0) {
+//		                		System.out.println("yayieeeeeeeeeeeeeeee");
+		                		res.add((Record)vector.get(i));
+		                	}
+		                	i++;
 		                }
 		                // Check for more elements greater than or equal to fromTarget to the left of mid
 		                i = mid - 1;
 		                while (i >= 0 && ((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(fromTarget) >= 0) {
-		                    res.add((Record)vector.get(i));
-		                    i--;
+		                	
+		                	if(!exact)
+		                		res.add((Record)vector.get(i));
+		                	else if(((Comparable<Object>)vector.get(i).getV().get(pkInfo.get(1))).compareTo(fromTarget) == 0) {
+		                		
+//		                		System.out.println("yayieeeeeeeeeeeeeeee");
+		                		res.add((Record)vector.get(i));}
+		                	i--;
 		                }
-		                // Move on to the next search
-		                if (exact) {
-		                    return res;
-		                }
+		               
+//		                if (exact) {
+//		                    break;
+//		                }
 		                low = high + 1; // Exit the while loop
 		            } else if (((Comparable<Object>)current).compareTo(fromTarget) < 0) {
 		                // The current element is less than fromTarget, so search the right half of the array
@@ -130,19 +166,21 @@ public class StaticHelpers {
 		            }
 		        }
 		        pageIn.close();
-		        if((((Comparable<Object>)vector.lastElement().getV().get(pkInfo.get(1))).compareTo(fromTarget) > 0)) {
-		        	flag = true;
-		        	break;
-		        }
+//		        if((((Comparable<Object>)vector.lastElement().getV().get(pkInfo.get(1))).compareTo(fromTarget) > 0)) {
+//		        	flag = true;
+//		        	System.out.println("breaking bitch");
+//		        	break;
+//		        }
 		        pageIn = null;
 		        System.gc();
 		        }
-	       
+//	        System.out.println("men hena");
+//	        System.out.println(res);
 				return res;
 				
 	        }
 			catch(Exception e) {
-							e.printStackTrace();
+//							e.printStackTrace();
 			 throw new DBAppException("Binary search btala3 records");
 			}
 		}
@@ -156,19 +194,19 @@ public class StaticHelpers {
 		Object min = null;
 		Object max = null;
 		try {
-			System.out.println(minn);
+//			System.out.println(minn);
 			min = DBApp.parsePrimaryKey(type, minn);
 			max = DBApp.parsePrimaryKey(type, maxx);
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		boolean exact=false;
 		boolean needBS=true;
 		//needBS, exact, from, to
 		ArrayList <Object> res = new ArrayList<Object>();
 		switch(operation) {
-		case"=": exact=true;from =term._objValue; break;
+		case"=": exact=true;from =term._objValue;to=term._objValue; break;
 		case">": from = incValue(term._objValue); to=max; break;
 		case">=": from = term._objValue; to=max; break;
 		case"<": from= min; to= decValue(term._objValue); break;
@@ -184,7 +222,7 @@ public class StaticHelpers {
 	
 	public static Object incValue(Object o) {
 		if(o instanceof Double)
-			o = (Double)o+Double.MIN_VALUE;
+			o = (Double)o+0.000000000000001;
 		if(o instanceof Date) {
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); // create SimpleDateFormat object
 	        try {
@@ -195,7 +233,7 @@ public class StaticHelpers {
 	            String nextDayStr = sdf.format(nextDay); // format incremented date to string
 	            o = sdf.parse(nextDayStr);
 	        } catch (Exception e) {
-	            e.printStackTrace();
+//	            e.printStackTrace();
 	        }
 		}
 		if(o instanceof Integer)
@@ -215,7 +253,7 @@ public class StaticHelpers {
 	
 	public static Object decValue(Object o) {
 		if(o instanceof Double)
-			o = (Double)o-Double.MIN_VALUE;
+			o = (Double)o-0.000000000000001;
 		if(o instanceof Date) {
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd"); // create SimpleDateFormat object
 	        try {
@@ -226,7 +264,7 @@ public class StaticHelpers {
 	            String nextDayStr = sdf.format(nextDay); // format decremented date to string
 	            o = sdf.parse(nextDayStr);
 	        } catch (Exception e) {
-	            e.printStackTrace();
+//	            e.printStackTrace();
 	        }
 		}
 		if(o instanceof Integer)
@@ -254,7 +292,7 @@ public class StaticHelpers {
 			String max="";
 			String min="";
 			while(s != null) {
-				if(s.split(",")[0].equals(strTableName) && s.split(",")[1].equals(colName)) {
+				if(s.split(",")[0].equalsIgnoreCase(strTableName) && s.split(",")[1].equalsIgnoreCase(colName)) {
 					min=s.split(",")[6];
 					max=s.split(",")[7];
 					break;
@@ -272,7 +310,26 @@ public class StaticHelpers {
 	
 	//getDataTypes
 	
+	public static int compareObjects2(Object obj1, Object obj2) {
+    	if((obj1 instanceof Null && obj2 instanceof Null) || (obj1 == null && obj2 == null))
+    		return 0;
+    	if(obj1 instanceof Null || obj2 instanceof Null|| (obj1 == null || obj2 == null))
+    		return -1;
+        if (obj1 instanceof Double && obj2 instanceof Double) {
+            return Double.compare((Double) obj1, (Double) obj2);
+        } else if (obj1 instanceof String && obj2 instanceof String) {
+//        	System.out.println("string!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            return (((String) obj1).toLowerCase()).compareTo(((String) obj2).toLowerCase());
+        } else if (obj1 instanceof Integer && obj2 instanceof Integer) {
+        	
+            return Integer.compare((Integer) obj1, (Integer) obj2);
+        } else  {
+            return ((Date) obj1).compareTo((Date) obj2);
+        } 
+        }
+	
 	public static Vector <Record> linearSelect(Vector <Record> v, SQLTerm [] arrSQLTerms,String [] strarrOperators  ) throws DBAppException {
+//		System.out.println("here?????or not");
 		Vector <Record> result = new Vector <Record>();
 		 for (int i = 0; i < v.size(); i++) {
 		        Record record = v.elementAt(i);
@@ -281,31 +338,32 @@ public class StaticHelpers {
 	            SQLTerm term = arrSQLTerms[j];
             Object value = record.getV().get(term._strColumnName);
 //            System.out.println(value);
+            
             switch (term._strOperator) {
             //if str[0] === AND satsis = sats &&,||,^  ((Comparable) value).compareTo(term._objValue) > 0;
                 case ">":
-                    satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) > 0 : 
-                    	DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) > 0 );
+                    satisfiesTerms = j==0? compareObjects2(value, term._objValue) > 0 : 
+                    	DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,compareObjects2(value, term._objValue) > 0 );
                     break;
                 case ">=":
-                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) >= 0 : 
-                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) >= 0 );
+                	satisfiesTerms = j==0? compareObjects2(value, term._objValue) >= 0 : 
+                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,compareObjects2(value, term._objValue) >= 0 );
                     break;
                 case "<":
-                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) < 0 : 
-                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) < 0 );
+                	satisfiesTerms = j==0?compareObjects2(value, term._objValue) < 0 : 
+                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,compareObjects2(value, term._objValue) < 0 );
                     break;
                 case "<=":
-                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) <= 0 : 
-                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) <= 0 );
+                	satisfiesTerms = j==0? compareObjects2(value, term._objValue) <= 0 : 
+                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,compareObjects2(value, term._objValue) <= 0 );
                     break;
                 case "!=":
-                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) != 0 : 
-                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) != 0 );
+                	satisfiesTerms = j==0? compareObjects2(value, term._objValue) != 0 : 
+                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,compareObjects2(value, term._objValue) != 0 );
                     break;
                 case "=":
-                	satisfiesTerms = j==0? ((Comparable) value).compareTo(term._objValue) == 0 : 
-                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,((Comparable) value).compareTo(term._objValue) == 0 );
+                	satisfiesTerms = j==0? compareObjects2(value, term._objValue) == 0 : 
+                		DBApp.performOperation(strarrOperators[j-1], satisfiesTerms,compareObjects2(value, term._objValue) == 0 );
                     break;
             }
 //            System.out.println(satisfiesTerms);
@@ -316,6 +374,13 @@ public class StaticHelpers {
         }
         
     }
+//		 System.out.println(result);
+		 try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		 return result;
 		}
 	
@@ -327,8 +392,8 @@ public static Hashtable <String,String> getDataTypes(String strTableName) throws
 			Hashtable <String,String> res = new Hashtable <String,String>(); 
 			String s = br.readLine();
 			while(s != null) {
-				System.out.println(strTableName);
-				if(s.split(",")[0].equals(strTableName)) {
+//				System.out.println(strTableName);
+				if(s.split(",")[0].equalsIgnoreCase(strTableName)) {
 					
 					res.put(s.split(",")[1],s.split(",")[2]);	
 				}
