@@ -2,7 +2,7 @@ package main.java;
 
 import java.io.Serializable;
 
-public class Null implements Serializable {
+public class Null implements Serializable, Comparable {
 	/**
 	 * 
 	 */
@@ -12,5 +12,11 @@ public class Null implements Serializable {
 	public String toString() {
 		// TODO Auto-generated method stub
 		return "null";
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		// TODO Auto-generated method stub
+		return -1;
 	}
 }

@@ -1,6 +1,11 @@
 package main.java;
 
-
+//Helper to indicate if the there is an index on the cols
+//search using the octree 
+//1-insert, search 
+//2-Update, if there is an index call update,
+//3-delete, if there is an index , call delete(octree) delete in the OCTET ONLY (COMPARE WITH HTBL), this will return list of records to be deleted.
+//4-select, search in octree if there is an index, filter the list according to the remaining conditions
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,8 +21,10 @@ import java.io.ObjectOutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 public class DBApp {
 	private int maxRowPerPage;
+	public static int maxEntriesInNode;
 	
 	
 	public void init() {
@@ -28,6 +35,7 @@ public class DBApp {
 			File metadata = new File("src/main/resources/metadata.csv");
 			metadata.createNewFile();
 			maxRowPerPage = Integer.parseInt(prop.getProperty("MaximumRowsCountinTablePage"));
+			maxEntriesInNode = Integer.parseInt(prop.getProperty("MaximumEntriesinOctreeNode"));;
 //			maxRowPerPage=5;
 		}
 		catch(Exception e) {
@@ -38,7 +46,7 @@ public class DBApp {
 							Hashtable<String,String> htblColNameMax) throws DBAppException 
 	{
 		//Checks
-		if(checkIfTableExists(strTableName) == true || checkDataTypeAndKey(strClusteringKeyColumn, htblColNameType) == false)
+		if(checkIfTableExists(strTableName) == true  || checkDataTypeAndKey(strClusteringKeyColumn, htblColNameType) == false)
 			throw new DBAppException("Table exists or wrong data types");
 		//Write in metadata file
 		Set<String> keys1 = htblColNameMax.keySet();
@@ -99,17 +107,19 @@ public class DBApp {
 		//5 check missing insertion
 		checkDataTypes(strTableName, htblColNameValue);
 		
+		
 		int [] index = binarySearchMadeByUs(htblColNameValue.get(TypeAndPk.get(1)), TypeAndPk, strTableName);
 		if(index[0] != -1)
 			throw new DBAppException();
 		ObjectInputStream in;
 		try {
+			
+			
 			FileReader fr = new FileReader("src/main/resources/metadata.csv");
 			BufferedReader br = new BufferedReader(fr);
 			String st = br.readLine();
 	
 			while(st!=null) {
-//				System.out.println("here");
 				String [] split = st.split(",");
 				if(split[0].equals(strTableName)) {
 					if(htblColNameValue.get(split[1]) == null)
@@ -121,10 +131,12 @@ public class DBApp {
 			in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
 			Table table = (Table) in.readObject();
 			Set <String> hs = htblColNameValue.keySet(); 
+			Record newRecord;
 			if(table.getPages().size()==0){
 				Vector <Record> newPage = new Vector <Record>();
 				table.getPages().add(1);
-				newPage.add(new Record(htblColNameValue));
+				newRecord = new Record(htblColNameValue,1,table.getRows()+1);
+				newPage.add(newRecord);
 				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName +  "1.ser"));
 				outputStream.writeObject(newPage);
 				outputStream.close();
@@ -132,18 +144,12 @@ public class DBApp {
 			}
 			else {
 				Vector <Record> currentPage = deserializePage(table, index[1]);
-				currentPage.add(index[2],new Record(htblColNameValue));
-//				System.out.println(currentPage);
-				//test on the index
+				newRecord = new Record(htblColNameValue,index[1],table.getRows()+1);
+				currentPage.add(index[2],newRecord);
 				int i =1;
-				
-					
 				if(currentPage.size() > maxRowPerPage) {
 					Vector <Record> newPage;
 					do {
-					
-					
-					
 					if(table.getPages().contains(index[1]+i)) {
 						newPage = deserializePage(table, index[1]+i);
 						
@@ -151,6 +157,19 @@ public class DBApp {
 					table.getPages().add(table.getPages().size()+1);
 					newPage = new Vector <Record>();}
 					newPage.add(0,currentPage.lastElement());
+					newPage.get(0).page++;
+					
+					Hashtable <String,String> colIndexes =  StaticHelpers.checkIndex(strTableName);
+					Set <String> cols = colIndexes.keySet();
+					Set <String> indexes = new HashSet <String>();
+					for(String s :cols) 
+						indexes.add(colIndexes.get(s));
+					for(String s : indexes) {
+						Octree oct = Octree.deserialiazeOctree(s);
+						oct.delete(null, null, null, false, false, false, newPage.get(0).getV()); 
+						oct.insert(newRecord);
+					}
+					
 					currentPage.remove(currentPage.size()-1);					
 					ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (index[1] +i) + ".ser"));
 					ObjectOutputStream outputStream2 = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (index[1]+ i -1) +  ".ser"));
@@ -159,14 +178,8 @@ public class DBApp {
 					outputStream.close();
 					outputStream2.close();
 					serializeTable(table);
-//					table.setRows(table.getRows() +1);
-//					System.out.println(currentPage);
-//					System.out.println(newPage);
 					currentPage = newPage;
 					i++;
-//					System.out.println(currentPage.size());
-//					System.out.println(!table.getPages().contains(index[1]+i));
-					System.out.println(table.getPages().contains(index[1]+i));
 				}while( currentPage.size() > maxRowPerPage  );}
 				else {
 				ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + (table.getPages().lastElement()) +  ".ser"));
@@ -176,6 +189,17 @@ public class DBApp {
 			table.setRows(table.getRows() +1);
 			in.close();
 			serializeTable(table);
+			Hashtable <String,String> colIndexes =  StaticHelpers.checkIndex(strTableName);
+			Set <String> cols = colIndexes.keySet();
+			Set <String> indexes = new HashSet <String>();
+			for(String s :cols) 
+				indexes.add(colIndexes.get(s));
+			for(String s : indexes) {
+				Octree oct = Octree.deserialiazeOctree(s);
+				oct.insert(newRecord);
+			}
+			System.gc();
+			
 		} catch (Exception e) {
 //			e.printStackTrace();
 			throw new DBAppException(e.getMessage() + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -194,11 +218,21 @@ public class DBApp {
 			checkIfTableExists(strTableName);
 			//2 Check Datatypes, all Columns exists
 			checkDataTypes(strTableName, htblColNameValue);
-			
-			//3 Check existing primary Key, Search for the record using clusteringKey
 			ArrayList <String> pkInfo = primaryKeyInfoAndCheck(strTableName, htblColNameValue,false);
 			Object pk = parsePrimaryKey(pkInfo.get(0),strClusteringKeyValue);
-//			System.out.println(pk);
+			
+			//3 Check existing primary Key, Search for the record using clusteringKey
+			Hashtable <String,String> colIndexes =  StaticHelpers.checkIndex(strTableName);
+			
+			System.out.println(colIndexes);
+			if(colIndexes.get(pkInfo.get(1)) != null) {
+				System.out.println("IN HEREEE");
+				Octree oct = Octree.deserialiazeOctree(colIndexes.get(pkInfo.get(1)));
+//				oct.root.print(0);
+				System.out.println(pkInfo.get(1));
+				oct.update(pk, pk, pk, oct.root.boundsX[0].equals(pkInfo.get(1)) , oct.root.boundsY[0].equals(pkInfo.get(1)), oct.root.boundsZ[0].equals(pkInfo.get(1)) , htblColNameValue);
+			}
+			else {
 			htblColNameValue.put(pkInfo.get(1), pk);
 			int [] index = binarySearchMadeByUs(htblColNameValue.get(pkInfo.get(1)), pkInfo, strTableName);
 
@@ -211,25 +245,28 @@ public class DBApp {
 			Vector <Record> currentPage = deserializePage(table, index[1]);
 			Record oldValue = currentPage.remove(index[0]); //worst case
 			Set <String> oldie = oldValue.getV().keySet();
-			Record newie = new Record(htblColNameValue);
+			Record newie = new Record(htblColNameValue,oldValue.page,table.getRows()+1);
+			table.setRows(table.getRows()+1);
 			for(String s : oldie) {
 				if(newie.getV().get(s)==null)
 					newie.getV().put(s, oldValue.getV().get(s));
 			}
-			currentPage.add(index[0],new Record(htblColNameValue));
+			currentPage.add(index[0],new Record(htblColNameValue,oldValue.page,table.getRows()+1));
 			ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + strTableName + index[1] + ".ser"));
 			outputStream.writeObject(currentPage);
 			outputStream.close();	
 			in.close();
+			}
 		}
 		catch(Exception e) {
-			//			e.printStackTrace(); StackTrace();
+						e.printStackTrace(); //StackTrace();
 			throw new DBAppException(e.getMessage());
 		}
+		System.out.println("Done");
 		//5 worst case scenario  
 	}
 			
-	private Object parsePrimaryKey(String type, String strClusteringKeyValue) throws ParseException {
+	public static Object parsePrimaryKey(String type, String strClusteringKeyValue) throws ParseException {
 		Object res = strClusteringKeyValue;
 		type = type.substring(10);
 		if(type.equals("Integer")) {
@@ -255,7 +292,25 @@ public class DBApp {
 		try {
 		if (checkIfTableExists(strTableName) == false)
 			throw new DBAppException("No such table");
+		boolean isThereAnIndex = false;
 		checkDataTypes(strTableName, htblColNameValue);
+		Hashtable <String,String> colIndexes = StaticHelpers.checkIndex(strTableName); 
+		Set <String> cols = colIndexes.keySet();
+		Set <String> indexes = new HashSet <String>();
+		for(String s :cols) 
+			indexes.add(colIndexes.get(s));
+		for(String s : indexes) {
+			Octree oct = Octree.deserialiazeOctree(s);
+			isThereAnIndex = true;
+			oct.delete(htblColNameValue.get(oct.root.boundsX[0]), htblColNameValue.get(oct.root.boundsY[0]), 
+					htblColNameValue.get(oct.root.boundsZ[0]), htblColNameValue.keySet().contains(oct.root.boundsX[0]), 
+					htblColNameValue.keySet().contains(oct.root.boundsY[0]), htblColNameValue.keySet().contains(oct.root.boundsZ[0]), htblColNameValue);
+		}
+		System.gc();
+		if(isThereAnIndex)
+			return;
+		
+		
 		if(htblColNameValue.get(primaryKeyInfoAndCheck(strTableName, htblColNameValue, false).get(1)) == null) {
 			ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
 			Table table = (Table) in.readObject();
@@ -314,7 +369,197 @@ public class DBApp {
 		catch(Exception e) {
 			e.printStackTrace();
 			throw new DBAppException(e.getMessage());
-		}		
+		}
+		System.out.println("Done");
+	}
+	
+	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException  {
+		//handle law sqlterm fady
+		//bs for primary key
+		try {
+		checkIfTableExists(arrSQLTerms[0]._strTableName);
+		//validate input
+		Vector <Record> result = new Vector <Record>();
+//	    result.add(new Vector <Record>());
+		String strTableName = arrSQLTerms[0]._strTableName;
+		
+		ObjectInputStream in;
+		in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
+		Table table = (Table) in.readObject();
+		ArrayList<String> pkInfo = primaryKeyInfoAndCheck(strTableName, null, false);
+		Vector<Record> tempResult = null;
+		boolean useIndex = true;
+		String s = "";
+		if(arrSQLTerms.length == 3 && strarrOperators.length == 2 && strarrOperators[0].equals("AND") && strarrOperators[1].equals("AND")) {
+			Hashtable <String,String> colIndexes = StaticHelpers.checkIndex(strTableName);
+			Set <String> cols = colIndexes.keySet();
+			Set <String> index = new HashSet <String>(); // ask abt handle 6 cols on 2 indexes
+//			for(String s :cols)
+//				index.add(colIndexes.get(s));
+			s = colIndexes.get(arrSQLTerms[0]._strColumnName);
+			for(int i = 0;i<3;i++)
+				if(!cols.contains(arrSQLTerms[i]._strColumnName) && !s.equals(colIndexes.get(arrSQLTerms[i]._strColumnName))) {
+					useIndex = false;break;}
+		}
+		else
+			useIndex = false;
+		if(useIndex == true) {
+			Octree oct = Octree.deserialiazeOctree(s);
+			ArrayList <String> x = StaticHelpers.getMaxMinVals(strTableName, (String) oct.root.boundsX[0]);
+			ArrayList <String> y = StaticHelpers.getMaxMinVals(strTableName, (String) oct.root.boundsY[0]);
+			ArrayList <String> z = StaticHelpers.getMaxMinVals(strTableName, (String) oct.root.boundsZ[0]);
+		
+			int i,j,k=0;
+			for(i = 0; i<3;i++)
+				if(oct.root.boundsX[0].equals(arrSQLTerms[i]._strColumnName))
+					break;
+			for(j = 0; j<3;j++)
+				if(oct.root.boundsY[0].equals(arrSQLTerms[j]._strColumnName))
+					break;
+			for(k = 0; k<3;k++)
+				if(oct.root.boundsZ[0].equals(arrSQLTerms[k]._strColumnName))
+					break;
+			Hashtable <String,String> datatypes =StaticHelpers.getDataTypes(strTableName);
+			
+			ArrayList <Object> x2 = StaticHelpers.decipher(arrSQLTerms[i], x.get(0),x.get(1),datatypes.get(oct.root.boundsX[0]));
+			ArrayList <Object> y2 = StaticHelpers.decipher(arrSQLTerms[j], y.get(0), y.get(1),datatypes.get(oct.root.boundsY[0]));
+			ArrayList <Object> z2 = StaticHelpers.decipher(arrSQLTerms[k], z.get(0),z.get(1),datatypes.get(oct.root.boundsZ[0]));
+			List <Record> flattened = oct.root.search2(x2.get(2),x2.get(3),y2.get(2),y2.get(3),z2.get(2),z2.get(3)).stream()
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+			return flattened.iterator();
+		}
+		
+		
+		for(int k=0;k<arrSQLTerms.length;k++) {
+   		 SQLTerm current= arrSQLTerms[k];
+   		 tempResult = new  Vector<Record>();
+//   		System.out.println(arrSQLTerms[k]._strColumnName);
+//   		System.out.println(pkInfo.get(0));
+   		 if(arrSQLTerms[k]._strColumnName.equals(pkInfo.get(1))) {
+   			 
+   		 ArrayList<Object> decipher = StaticHelpers.decipher(arrSQLTerms[k],pkInfo.get(2), pkInfo.get(3),pkInfo.get(0));
+   		 if((boolean)decipher.get(0)) {
+   			 
+   			 tempResult = StaticHelpers.binarySearchPK(decipher.get(2), decipher.get(3), (boolean)decipher.get(1), pkInfo, current._strTableName);
+   			 break;}
+   		 }
+   	 }
+		if(tempResult == null) {
+			
+		for(int i0 = 0;i0<table.getPages().size();i0++) {
+			Vector <Record> v = deserializePage(table, i0 +1);
+			result = StaticHelpers.linearSelect(v, arrSQLTerms, strarrOperators);
+	    }}
+		else {
+			result = StaticHelpers.linearSelect(tempResult, arrSQLTerms, strarrOperators);
+		}
+		 in.close();
+	    return result.iterator();	 
+	   
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			throw new DBAppException();
+		}}
+	
+	public void createIndex(String strTableName,String[] strarrColName) throws DBAppException {
+		//1-Tablename,colnames
+		//get min,max vals of columns
+		//Loop on all pages
+		//insert in index if(null) throw exception
+		//update metadatafile
+		checkIfTableExists(strTableName);
+		Object [] x = new Object [3];
+		Object [] y = new Object [3];
+		Object [] z = new Object [3];
+		x[0] = strarrColName[0];
+		y[0] = strarrColName[1];
+		z[0] = strarrColName[2];
+		ObjectInputStream in = null;
+		//Feed x,y,z
+		BufferedReader br = null;
+		FileReader fr = null;
+		try {
+			 fr = new FileReader("src/main/resources/metadata.csv");
+			 br = new BufferedReader(fr);
+			String s = br.readLine();
+			int i = 0;
+			while(s != null) {
+				String [] line = s.split(",");
+				if(line[0].equals(strTableName) && line[1].equals(strarrColName[i]))  {
+					if(line[5].equals("Octree"))
+						throw new DBAppException("Index already on this column");
+					if(i==0) {
+						fr = new FileReader("src/main/resources/metadata.csv");
+						 br = new BufferedReader(fr);
+						x[1] = parsePrimaryKey(line[2], line[6]);x[2]=parsePrimaryKey(line[2], line[7]);}
+					if(i==1) {
+						fr = new FileReader("src/main/resources/metadata.csv");
+						 br = new BufferedReader(fr);
+						y[1] = parsePrimaryKey(line[2], line[6]); y[2]=parsePrimaryKey(line[2], line[7]);}
+					if(i==2) {
+						z[1] = parsePrimaryKey(line[2], line[6]);z[2]=parsePrimaryKey(line[2], line[7]);i++;break;}
+					i++;
+				}
+				s = br.readLine();
+			}
+			
+			br.close();
+			fr.close();
+//			System.out.println(i);
+			if(i<3) throw new DBAppException("COL not found ya ebn el 3abeta");
+		//Create the index
+//			System.out.println(x[0]);
+			Octree index = new Octree(strTableName,strarrColName[0]+strarrColName[1]+strarrColName[2], x, y, z);
+			
+			//Loop on pages,insert in index -> if (null) throw exception and delete index
+			
+			
+			in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + strTableName + ".ser"));
+			Table table = (Table) in.readObject();
+			//no pk & no index
+			for(i = 0;i<table.getPages().size();i++) {
+				Vector <Record> v = deserializePage(table, i +1);
+			    for (int j = 0; j < v.size(); j++) {
+			    		checkNull(v.get(j));
+			    		index.insert(v.get(j));
+//			    		System.out.println(v.get(i));
+			    	}
+			    v = null;
+			    System.gc();
+		    }
+			in.close();
+			//, edit in metadata file
+			StaticHelpers.editMetadata("src/main/resources/metadata.csv", strTableName, strarrColName, x, y, z);
+//			index.root.print(0);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			Octree.deleteIndex(strarrColName[0]+strarrColName[1]+strarrColName[2]);
+			throw new DBAppException(e.getMessage());
+		}
+		
+	}
+
+	public void checkNull(Record r) throws DBAppException {
+		Set <String> set = r.getV().keySet();
+		for(String s: set)
+			if(r.getV().get(s) instanceof Null)
+				throw new DBAppException("NULL VALUES IN INDEX");
+	}
+	
+	public static boolean performOperation(String operator, boolean bool1, boolean bool2) throws DBAppException {
+	    switch (operator) {
+	        case "AND":
+	            return bool1 && bool2;
+	        case "OR":
+	            return bool1 || bool2;
+	        case "XOR":
+	            return bool1 ^ bool2;
+	        default:
+	            throw new DBAppException("Invalid operator: " + operator);
+	    }
 	}
 
 	private boolean checkIfTableExists(String tableName) throws DBAppException{
@@ -358,7 +603,7 @@ public class DBApp {
 		return keyExists;
 	}
 	
-	//returns arraylist datatype of pk,pk name
+	//returns arraylist: datatype of pk,pk name,pk min, pk max
 	private ArrayList <String> primaryKeyInfoAndCheck(String strTableName,Hashtable<String,Object> htblColNameValue,boolean insert) throws DBAppException {
 		
 		try {
@@ -367,20 +612,27 @@ public class DBApp {
 			ArrayList <String> res = new ArrayList<String>(); 
 			String s = br.readLine();
 			String pk = "";
+			String max="";
+			String min="";
 			while(s != null) {
 				if(s.split(",")[0].equals(strTableName) && s.split(",")[3].equals("True")) {
 					pk = s.split(",")[1]; //got the primary key
 					res.add(s.split(",")[2]);
+					min=s.split(",")[6];
+					max=s.split(",")[7];
+					
 					break;
 				}
 				s = br.readLine();	
 			}
-			if((pk.equals("") || htblColNameValue.get(pk)==null) && insert) {
+			if( insert && (pk.equals("") || htblColNameValue.get(pk)==null)) {
 				br.close();
 				throw new DBAppException("noPk");
 			}
 			res.add(pk);
 			br.close();
+			res.add(min);
+			res.add(max);
 			return res;	
 		} catch (Exception e) {
 			throw new DBAppException(e.getMessage());
@@ -517,6 +769,7 @@ public class DBApp {
 		 throw new DBAppException("bs");
 		}
 	}
+	
 
 	private void serializeTable (Table table) throws FileNotFoundException, IOException {
 		 ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("src/main/resources/data/" + table.getTableName() +".ser"));
@@ -524,51 +777,101 @@ public class DBApp {
 		 out.close();
 	}
 	
-
-	private Vector <Record> deserializePage (Table table, int pageNumber) throws FileNotFoundException, IOException, ClassNotFoundException {
+	public static Vector <Record> deserializePage (Table table, int pageNumber) throws FileNotFoundException, IOException, ClassNotFoundException {
 		ObjectInputStream in = new ObjectInputStream(new FileInputStream("src/main/resources/data/" + table.getTableName() + pageNumber + ".ser"));
 		Vector <Record> r =  (Vector <Record>) in.readObject();
 		in.close();
 		return r;
 	}
 	
-//	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
-//		DBApp x = new DBApp();
-//		x.init();
-//		
-//	    // ---------------------1 Table creation, see whatsapp list and change values of htbl according to the test case------------------------
-//	    Hashtable <String,String>  htblColNameType = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMin = new Hashtable <String,String> ( );
-//		Hashtable <String,String>  htblColNameMax = new Hashtable <String,String> ( );
-//		htblColNameType.put("id", "java.lang.Integer");
-//		htblColNameType.put("name", "java.lang.String");
-//		htblColNameType.put("gpa", "java.lang.Double");	    
-//		htblColNameMin.put("id", "1");
-//		htblColNameMin.put("name", "a");
-//		htblColNameMin.put("gpa", "1");
-//		htblColNameMax.put("id", "1000000");
-//		htblColNameMax.put("name", "zzzzzzzzzzzzzzzz");
-//		htblColNameMax.put("gpa", "4");
-//		x.createTable("bla4", "id", htblColNameType, htblColNameMin, htblColNameMax);
-//		
-//		
-//		// ---------------------2 Table insertion,deletion and update--------------------------
-//		Hashtable <String,Object> htblColNameValue = new Hashtable( );
-//		
-////	    htblColNameValue.put("id", new Integer(15)); 
-////	    htblColNameValue.put("hours",7.0); 
-//	    htblColNameValue.put("id","43-0271"); 
-////	    String dateString = "Tue May 14 00:00:00 EET 1901";
-////	    SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
-////	    Date date = dateFormat.parse(dateString);
-////	    dateFormat.applyPattern("yyyy-MM-dd");
-////	    String formattedDate = dateFormat.format(date);
-////	    htblColNameValue.put("gpa", new Double(3)); 
-//		
-////	    x.insertIntoTable("students", htblColNameValue);
-////	    x.updateTable("transcripts", "4.9996", htblColNameValue);
-////	    x.deleteFromTable("courses", htblColNameValue);
-//	    
+	public Iterator parseSQL(StringBuffer strbufSQL) throws DBAppException {
+	    String sql = strbufSQL.toString().trim();
+	    String[] tokens = sql.split("\\s+");
+	    String command = tokens[0].toUpperCase();
+	    String quotes = "'";
+	    String doubleQuotes = "\"";
+	    for(int i = 1; i < tokens.length; i++) {
+	    	tokens[i] = tokens[i].toUpperCase();
+	    	if(tokens[i].contains(",") || tokens[i].contains("(") || tokens[i].contains(")") || tokens[i].contains(quotes) || tokens[i].contains(doubleQuotes)) {
+	    		tokens[i] = tokens[i].replace(",","");
+	    		tokens[i] = tokens[i].replace("(","");
+	    		tokens[i] = tokens[i].replace(")","");
+	    		tokens[i] = tokens[i].replace(quotes,"");
+	    		tokens[i] = tokens[i].replace(doubleQuotes,"");
+	    	}
+	    	System.out.println(tokens[i]);
+	    }
+	    
+	    switch(command){
+	    case "CREATE": if(tokens[1].equals("TABLE")) {BonusHelpers.createTableParser(tokens,this);}else{BonusHelpers.createIndexParser(tokens,this);};break;
+	    case "SELECT": BonusHelpers.selectParser(tokens,this);break;
+	    case "INSERT": BonusHelpers.insertParser(tokens,this);break;
+	    case "DELETE": BonusHelpers.deleteParser(tokens,this);break;
+	    case "UPDATE": BonusHelpers.updateParser(tokens,this);break;
+	    }
+	     return null;
+	}
+	
+
+	public static void main(String[] args) throws DBAppException, FileNotFoundException, IOException, ClassNotFoundException, ParseException {
+		DBApp x = new DBApp();
+		x.init();
+		Hashtable <String,Object>  htblColNameValue = new Hashtable <String,Object> (); 
+		StringBuffer create = new StringBuffer("create table hijk (id INT check (id > 1 AND id < 9), name VARCHAR(255) check (name > a AND name < z), count int check (count > 0 AND count < 9999), PRIMARY KEY (id))");	
+		StringBuffer select = new StringBuffer("select * from hijk where id < 8 AND name = 'Hassan'");
+		StringBuffer insert = new StringBuffer("insert into hijk (id, name, count) values (9, 'Hassan', 5)");
+		StringBuffer index = new StringBuffer("CREATE INDEX hijk ON abcd (id, dob, name)");
+		StringBuffer delete = new StringBuffer("DELETE FROM hijk WHERE id = 1 name = 'Hassan' AND count = 5");
+		StringBuffer update = new StringBuffer("UPDATE hijk SET name = 'Hassouna', count = 5 WHERE id = 9");
+		x.parseSQL(update);
+//		StringBuffer sqlStatement = new StringBuffer();
+//		sqlStatement.append("INSERT INTO students (id, name, dob, gpa) ");
+//		sqlStatement.append("VALUES (1, 'John Smith', '2002-01-01', 3.75)");
+
+		// Call the parseSQL method to execute the SQL statement
+//		Iterator resultSet = x.parseSQL(sqlStatement);
+//	    htblColNameValue.put("ID", 2); 
+//	    htblColNameValue.put("COUNT", 5);
+//	    htblColNameValue.put("NAME", "Hassan") ; 
+//	    x.insertIntoTable("EFGH", htblColNameValue);
+//	    x.insertIntoTable("students", htblColNameValue);
+//	    x.deleteFromTable("students", htblColNameValue);
+//	    System.out.println(htblColNameValue);
+//        x.updateTable("students", "43-0276", htblColNameValue);
+//        x.createIndex("students", new String []{"id","first_name","gpa"});
+        
+	   
+//	    x.insertIntoTable("students", htblColNameValue);
+
+//		x.createIndex("students", new String []{"gpa","dob","first_name"});
+//		SQLTerm[] arrSQLTerms;
+//		arrSQLTerms = new SQLTerm[3];
+//		arrSQLTerms[0] = new SQLTerm();
+//		arrSQLTerms[1] = new SQLTerm();
+//		arrSQLTerms[2] = new SQLTerm();
+//		arrSQLTerms[2]._strTableName = "students";
+//		arrSQLTerms[2]._strColumnName= "first_name";
+//		arrSQLTerms[2]._strOperator = ">=";
+//		arrSQLTerms[2]._objValue = "WutyhM";
+//		System.out.println("wutyhm".compareTo("csfzrt") + "--------------");
+//		arrSQLTerms[1]._strTableName = "students";
+//		arrSQLTerms[1]._strColumnName= "gpa";
+//		arrSQLTerms[1]._strOperator = ">=";
+//		arrSQLTerms[1]._objValue = new Double( 1.5 );
+//		arrSQLTerms[0]._strTableName = "students";
+//		arrSQLTerms[0]._strColumnName= "id";
+//		arrSQLTerms[0]._strOperator = ">";
+//		arrSQLTerms[0]._objValue = "43-0276";
+//		String[]strarrOperators = new String[2];
+//		strarrOperators[0] = "AND";
+//		strarrOperators[1] = "AND";
+////		 select * from Student where name = “John Noor” or gpa = 1.5;
+//		Iterator resultSet = x.selectFromTable(arrSQLTerms , strarrOperators);
+//		while(resultSet.hasNext()) {
+//			System.out.println(resultSet.next());
+//		}
+//	    Octree o = Octree.deserialiazeOctree("idfirst_namegpa");
+//	    o.update("43-0276", "43-0276", "43-0276", true, false, false, htblColNameValue);
 //		try {
 //			ObjectInputStream inp = new ObjectInputStream(new FileInputStream("src/main/resources/data/students.ser")); //hot hena esm el table el ayez pages beta3to
 //			Table b = (Table) inp.readObject();
@@ -577,6 +880,13 @@ public class DBApp {
 //			System.out.println(b.getRows());
 //			Vector <Record>  v = x.deserializePage(b, 1);
 //			System.out.println(v);
+			
+	       
+	        
+//	        o.root.print(0);
+//	        o.search();
+//			Octree y = Octree.deserialiazeOctree("idfirst_namegpa");
+//			y.root.print(0);
 //			System.out.println(v.size());
 //			Vector <Record>  v2 = x.deserializePage(b, 2);
 //			System.out.println(v2);
@@ -591,7 +901,7 @@ public class DBApp {
 //		}
 //		catch(Exception e)
 //		{}
-//	}
+	}
 
 	
 	
