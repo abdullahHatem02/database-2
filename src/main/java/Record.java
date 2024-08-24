@@ -2,16 +2,23 @@ package main.java;
 import java.io.Serializable;
 import java.util.*;
 public class Record implements Serializable {
-	/**
-	 * 
-	 */
+	
+	int page;
+	int id;
+	static int Gid;
+	
 	private static final long serialVersionUID = 1L;
 	private Hashtable <String,Object> v;
 	
 
 	public Record(Hashtable <String,Object> v) {
 		this.v = v;
-		
+		this.id = Gid++;
+	}
+	public Record(Hashtable <String,Object> v,int page,int id) {
+		this.v = v;
+		this.id = id;
+		this.page =page;
 	}
 	public Hashtable <String,Object> getV() {
 		return v;
@@ -30,7 +37,12 @@ public class Record implements Serializable {
 	public String toString() {
 		return v.toString();
 	}
-	
+	public int getPage() {
+		return page;
+	}
+	public void setPage(int x) {
+		page=x;
+	}
 //	public void setV(Vector <Object> v) {
 //		this.v = v;
 //	}
